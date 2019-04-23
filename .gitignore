@@ -1,0 +1,11 @@
+*.log
+*.pyc
+.idea
+*.swm
+*.soln
+dist
+build
+__pychache__
+mapcore.egg-info
+env
+venv
