@@ -30,7 +30,9 @@ class Task:
 
     def save_plan(self, plan):
         logging.info('\tSaving precedent classically...')
-        plan_sign, _, _ = self.PlanToAction(self.signs['exp_'+self.start_situation.name].images[1], self.signs['exp_'+self.goal_situation.name].images[1], plan, '')
+        self.start_situation.name += self.name
+        self.goal_situation.name += self.name
+        plan_sign, _, _ = self.PlanToAction(self.start_situation.images[1], self.goal_situation.images[1], plan, '')
         # Add connection to goal situation
         goal_signif = self.goal_situation.add_significance()
         connector = goal_signif.add_feature(plan_sign.significances[1])
@@ -60,27 +62,16 @@ class Task:
 
             agents = [self.signs["I"]]
             agents.extend(I_obj)
-            self.start_situation.name += self.name
-            self.goal_situation.name += self.name
 
             plan_sit = [pm[0].sign for pm in plan]
-            pl_cm_ind = [pm[0].index for pm in plan]
-            if self.start_situation not in plan_sit:
-                plan_sit.append(self.start_situation)
-            if self.goal_situation not in plan_sit:
-                plan_sit.append(self.goal_situation)
             pms_act = [pm[2] for pm in plan]
 
             for name, s in self.signs.copy().items():
                 signif=list(s.significances.items())
                 if name.startswith(SIT_PREFIX):
-                    for _, pm in s.meanings.copy().items():
+                    for index, pm in s.meanings.copy().items():
                         s.remove_meaning(pm) # delete all meanings of situations
-                    if s in plan_sit: # only 1 mean and 1 image per plan sit
-                        for index, im in s.images.copy().items():
-                            if index not in pl_cm_ind:
-                                s.remove_image(im)
-                    else:
+                    if s not in plan_sit: # delete all non plan situations
                         self.signs.pop(name)
 
                 elif len(signif):
@@ -125,19 +116,18 @@ class Task:
 
     def PlanToAction(self, start, finish, PlActs, plan_name):
         # Creating plan action for further use
+        scm = start.copy('image', 'meaning')
+        start.sign.add_meaning(scm)
+        fcm = finish.copy('image', 'meaning')
+        finish.sign.add_image(fcm)
         if not plan_name:
             plan_name = 'plan_'+ self.name
-        if not start.sign.meanings:
-            scm = start.copy('image', 'meaning')
-            start.sign.add_meaning(scm)
-        if not finish.sign.meanings:
-            fcm = finish.copy('image', 'meaning')
-            finish.sign.add_meaning(fcm)
+
         plan_sign = Sign(plan_name + self.name)
         plan_mean = plan_sign.add_meaning()
-        connector = plan_mean.add_feature(start.sign.meanings[1])
+        connector = plan_mean.add_feature(scm)
         start.sign.add_out_meaning(connector)
-        conn = plan_mean.add_feature(finish.sign.meanings[1], effect=True)
+        conn = plan_mean.add_feature(fcm, effect=True)
         finish.sign.add_out_meaning(conn)
         self.signs[plan_sign.name] = plan_sign
 

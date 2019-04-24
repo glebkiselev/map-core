@@ -295,8 +295,6 @@ class CausalMatrix:
                                     fviews.update(pm.spread_down_activity_view(depth-1))
         return fviews
 
-
-
     def get_iner(self, sign, base):
         iner = []
         for event in itertools.chain(self.cause, self.effect):
@@ -306,6 +304,7 @@ class CausalMatrix:
                         cm = getattr(connector.out_sign, base+'s')[connector.out_index]
                         iner.append(cm)
         return iner
+
 
 
 class Event:

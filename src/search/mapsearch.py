@@ -38,13 +38,14 @@ class MapSearch():
         active_cm = active_pm.copy('image', 'meaning')
         for name, sign in self.world_model.items():
             for index, cm in sign.meanings.copy().items():
-                result, checked = self._check_activity(cm, active_cm, self.backward, True)
+                try:
+                    result, checked = self._check_activity(cm, active_cm, self.backward, True)
+                except Exception:
+                    result = False
                 if result:
-                    agents = checked.get_agents(self.agents)
+                    agents = checked.get_signs() & self.agents
                     if not agents: agent = self.I_sign
                     else: agent = agents.pop()
-                    # if checked.includes('meaning', active_cm):
-                        #precedents.append((agent, checked))
                     if result:
                         precedents.append((agent, checked))
         return precedents
@@ -183,9 +184,9 @@ class MapSearch():
             logging.info('Clarify experience plan')
         applicable = []
         if self.backward:
-            act = acts[-1].sign
+            act = acts[-(iteration+1)].sign
         else:
-            act = acts[0].sign
+            act = acts[iteration].sign
         finall_plans = []
         plan = copy(cur_plan)
 
@@ -205,11 +206,13 @@ class MapSearch():
                 plan.append(
                     (active_pm, action[1].sign.name, action[1], action[0]))
                 logging.info('Experience action %s added to plan' % action[1].sign.name)
-            if acts:
-                if not self.backward:
-                    acts.pop(0)
-                else:
-                    acts.pop(-1)
+            else:
+                continue
+            # if acts:
+                # if not self.backward:
+                #     acts.pop(0)
+                # else:
+                #     acts.pop(-1)
             if next_pm.includes('image', check_pm):
                     if plan:
                         finall_plans.extend(plan)
@@ -390,8 +393,9 @@ class MapSearch():
         if not result:
             expanded = pm.expand('meaning')
             if not len(expanded.effect) == 0:
-                return self._check_activity(expanded, next_cm, backward)
+                return self._check_activity(expanded, next_cm, backward, prec_search)
             else:
+                expanded.sign.remove_meaning(expanded)
                 return False, pm
         return result, pm
 
