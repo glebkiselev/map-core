@@ -1,0 +1,133 @@
+(define (domain domain_HTNroom)
+	(:requirements :typing :hierachie)
+	(:types
+		block - locatable
+		room - object
+		agent - locatable
+		locatable - object
+	)
+	(:predicates
+		(hallway ?arg0 - room ?arg1 - room)
+		(at ?arg0 - locatable ?arg1 - room)
+		(holding ?arg0 - block ?arg1 - agent)
+		(handempty ?ag - agent)
+	)
+	(:task deliver
+		:parameters (?b - block ?r - room)
+		:precondition ()
+		:effect ()
+	)
+
+	(:task get_to
+		:parameters (?ag - agent ?r - room)
+		:precondition ()
+		:effect ()
+	)
+
+	(:task load
+		:parameters (?ag - agent ?r - room ?b - block)
+		:precondition ()
+		:effect ()
+	)
+
+	(:task unload
+		:parameters (?ag - agent ?r - room ?b - block)
+		:precondition ()
+		:effect ()
+	)
+	(:method m_deliver_ordering_0
+		:parameters (?r1 - room ?r2 - room ?b - block ?ag - agent)
+		:task (deliver ?b ?r2)
+		:subtasks (and
+		 (task0 (get_to ?ag ?r1))
+		 (task1 (load ?ag ?r1 ?b))
+		 (task2 (get_to ?ag ?r2))
+		 (task3 (unload ?ag ?r2 ?b))
+		)
+		:ordering (and
+			(task0 < task1)
+			(task1 < task2)
+			(task2 < task3)
+		)
+	)
+
+	(:method m_unload_ordering_0
+		:parameters (?r - room ?b - block ?ag - agent)
+		:task (unload ?ag ?r ?b)
+		:subtasks (and
+		 (task0 (putdown ?ag ?r ?b))
+		)
+	)
+
+	(:method m_load_ordering_0
+		:parameters (?r - room ?b - block ?ag - agent)
+		:task (load ?ag ?r ?b)
+		:subtasks (and
+		 (task0 (pickup ?ag ?r ?b))
+		)
+	)
+
+	(:method m_drive_to_ordering_0
+		:parameters (?r1 - room ?r2 - room ?ag - agent)
+		:task (get_to ?ag ?r2)
+		:subtasks (and
+		 (task0 (drive ?ag ?r1 ?r2))
+		)
+	)
+
+	(:method m_drive_to_via_ordering_0
+		:parameters (?r2 - room ?r3 - room ?ag - agent)
+		:task (get_to ?ag ?r3)
+		:subtasks (and
+		 (task0 (get_to ?ag ?r2))
+		 (task1 (drive ?ag ?r2 ?r3))
+		)
+		:ordering (and
+			(task0 < task1)
+		)
+	)
+	(:action drive
+		:parameters (?ag - agent ?r1 - room ?r2 - room)
+		:precondition
+			(and
+				(at ?ag ?r1)
+				(hallway ?r1 ?r2)
+			)
+		:effect
+			(and
+				(not (at ?ag ?r1))
+				(at ?ag ?r2)
+			)
+	)
+
+	(:action pickup
+		:parameters (?ag - agent ?r - room ?b - block)
+		:precondition
+			(and
+				(at ?ag ?r)
+				(at ?b ?r)
+				(handempty ?ag)
+			)
+		:effect
+			(and
+				(not (at ?b ?r))
+				(not (handempty ?ag))
+				(holding ?b ?ag)
+			)
+	)
+
+	(:action putdown
+		:parameters (?ag - agent ?r - room ?b - block)
+		:precondition
+			(and
+				(at ?ag ?r)
+				(holding ?b ?ag)
+			)
+		:effect
+			(and
+				(not (holding ?b ?ag))
+				(at ?b ?r)
+				(handempty ?ag)
+			)
+	)
+)

@@ -65,7 +65,7 @@ class MapPlanner():
 
     def _parse(self, domain_file, problem_file):
         """
-
+        pddl and hddl Parser
         :param domain_file:
         :param problem_file:
         :return:

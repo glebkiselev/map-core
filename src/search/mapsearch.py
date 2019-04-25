@@ -38,16 +38,16 @@ class MapSearch():
         active_cm = active_pm.copy('image', 'meaning')
         for name, sign in self.world_model.items():
             for index, cm in sign.meanings.copy().items():
-                try:
-                    result, checked = self._check_activity(cm, active_cm, self.backward, True)
-                except Exception:
-                    result = False
+                result, checked = self._check_activity(cm, active_cm, self.backward, True)
                 if result:
                     agents = checked.get_signs() & self.agents
                     if not agents: agent = self.I_sign
                     else: agent = agents.pop()
                     if result:
                         precedents.append((agent, checked))
+                else:
+                    if cm != checked:
+                        sign.remove_meaning(checked)
         return precedents
 
     def applicable_search(self, meanings, active_pm):
