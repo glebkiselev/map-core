@@ -11,7 +11,7 @@ class Parser:
             problem = pr.read()
         self.domain = domain
         self.problem = problem
-        self.utokens = [':types', ':predicates', ':task', ':method', ':action']
+        self.utokens = []
 
     def get_tokens(self, text):
         return re.findall(':[a-z]*', text)
@@ -20,8 +20,8 @@ class Parser:
         for val in tokens:
             yield val
 
-    def ParseDomain(self, descr):
-        iner = {}
+    def ParseBlock(self, descr):
+        block = {}
         tokens = self.get_tokens(descr)
         flag = False
         my_token = self.tokenizer(tokens)
@@ -42,65 +42,41 @@ class Parser:
                     part = part[:-1]
                 parsed = getattr(bch, 'parse_'+start_token[1:])(part)
                 if isinstance(parsed, list):
-                    iner[start_token[1:]] = parsed
+                    block[start_token[1:]] = parsed
                 else:
-                    iner.setdefault(start_token[1:], []).append(parsed)
+                    block.setdefault(start_token[1:]+'s', []).append(parsed)
 
                 if next_token != start_token:
                     self.utokens.remove(start_token)
                 start_token = next_token
-
-
                 descr = descr.split(part)[1]
 
-                # if start_token != ':action' and start_token != ':method':
-                #     if start_token != tokens[-1]:
-                #         next_token = next(my_token)
-                #         blockcode = '(' + part.split(next_token)[0][:-1]
-                #         for start, end, depth in self.tree_sample(blockcode):
-                #             if depth != 0:
-                #                 iner[start_token].append(blockcode[start:end].strip())
-                #             elif len(iner[start_token]) == 0:
-                #                 iner[start_token].append(blockcode[start:end].strip())
-                #         start_token = next_token
-                #     else:
-                #         for start, end, depth in self.tree_sample(part):
-                #             if depth != 0:
-                #                 iner[start_token].append(part[start:end].strip())
-                #         break
-                # elif start_token == ':action':
-                #     next_token = next(my_token)
-                #     act_name = part.split(next_token)[0].strip()
-                #     act_dict = {}
-                #     act_dict[act_name] = self.ParseDomain(part)
-                #     iner.setdefault('actions', {}).update(act_dict)
-                #     while not next_token == ':action':
-                #         next_token = next(my_token)
-                #     start_token = next_token
-                #     domain = self.domain.split(part)[1]
-                # elif start_token == ':method':
-                #     next_token = next(my_token)
-                #     act_name = part.split(next_token)[0].strip()
-                #     act_dict = {}
-                #     act_dict[act_name] = self.ParseDomain(part)
-                #     iner.setdefault('methods', {}).update(act_dict)
-                #     while not next_token == ':method':
-                #         next_token = next(my_token)
-                #     start_token = next_token
-                #     domain = self.domain.split(part)[1]
             except StopIteration:
+                part = [''.join(el) for el in descr.split(start_token)][1]
+                while part[-1] != ')':
+                    part = part[:-1]
+                else:
+                    part = part[:-1]
+                parsed = getattr(bch, 'parse_'+start_token[1:])(part)
+                block.setdefault(start_token[1:] +'s', []).append(parsed)
+                self.utokens.remove(start_token)
                 flag = True
-        return iner
-    def ParseProblem(self, domain):
-        pass
+        return block
+
+    def ParseDomain(self, descr):
+        self.utokens = [':types', ':predicates', ':task', ':method', ':action']
+        return self.ParseBlock(descr)
+
+    def ParseProblem(self, descr):
+        self.utokens = [':objects', ':htn', ':init']
+        return self.ParseBlock(descr)
 
 if __name__ == '__main__':
-    domain = None
+
     domain_file = '../benchmarks/hierarchical/domain-room.hddl'
     problem_file = '../benchmarks/hierarchical/pRfile01.hddl'
 
-
     parser = Parser(domain_file, problem_file)
     domain = parser.ParseDomain(parser.domain)
-    problem = parser.ParseProblem(domain)
+    problem = parser.ParseProblem(parser.problem)
 
