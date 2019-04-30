@@ -9,7 +9,11 @@ import logging
 
 
 class HtnStmt():
-    pass
+    def __init__(self, parameters, subtasks, ordering_list):
+        self.parameters = parameters
+        self.subtasks = subtasks
+        self.ordering = ordering_list
+
 
 class PredicatesStmt():
     def __init__(self, name, signature):
@@ -19,7 +23,9 @@ class PredicatesStmt():
 
     def __repr__(self):
         predicate = self.name + ' '
-        for element in [''.join(sig[0] +' - ' + sig[1]) for sig in self.signature]:
+        for element in self.signature:
+            if isinstance(element, tuple):
+                element = element[0] +' - ' + element[1]
             predicate+=element + ' '
         return predicate[:-1]
 
@@ -123,6 +129,8 @@ def method_task_parse(task):
             task_descr = task
         task_name = re.findall('^\w+', task_descr)
         task_params = re.findall('\?\w+', task_descr)
+        if not task_params:
+            task_params = [param for param in re.findall('\w+', task_descr) if param != task_name[0]]
     except Exception:
         logging.warning('Wrong pattern!! The pattern is "task_number (task_name params)"')
     return key, task_name, task_params
@@ -190,7 +198,7 @@ def parse_objects(objects):
     :param objects:
     :return: list of pairs object - type.
     """
-    return re.findall('([A-Za-z]*) - ([A-Za-z]*)', objects)
+    return re.findall('(\w+) - (\w+)', objects)
 
 def parse_htn(htn):
     """
@@ -198,12 +206,38 @@ def parse_htn(htn):
     :param htn:
     :return: htn Statement
     """
-    print()
-    return HtnStmt()
+    params = [''.join(el) for el in htn.split(':parameters')[1].split(':subtasks')][0]
+    parameters = re.findall('(\?\w+) - (\w+)', params)
+    if ':ordering' in htn:
+        subtasks_descr = [''.join(el) for el in htn.split(':subtasks')[1].split(':ordering')][0]
+    else:
+        subtasks_descr = [''.join(el) for el in htn.split(':subtasks')][1]
+    # Here is only 1 block parsing. If you want more - do the same. The key of block is 'and'.
+    part_brackets = [part for part in list(tree_sample(subtasks_descr)) if part[2] == 1]
+    stasks = []
+    for st, end, _ in part_brackets:
+        stasks.append(method_task_parse(subtasks_descr[st:end]))
+    subtasks = {s[0]: (s[1][0], s[2]) for s in stasks}
+    ordering_list = []
+    if len(subtasks) > 1:
+        ordering = [''.join(el) for el in htn.split(':ordering')][1]
+        # Here is only 1 block parsing. If you want more - do the same. The key of block is 'and'.
+        brackets = list(tree_sample(ordering))
+        max_depth = max([x for _, _, x in brackets])
+        brackets = [br for br in brackets if br[2] == max_depth]
+        for st, end, _ in brackets:
+            or_decr = ordering[st:end].strip()
+            lb = re.findall('(\w+) < (\w+)', or_decr)[0]
+            if not ordering_list:
+                ordering_list.extend(lb)
+            else:
+                ordering_list.append(lb[1])
+
+    return HtnStmt(parameters, subtasks, ordering_list)
 
 def parse_init(init_descr):
     """
-    init - its an list of init statements of the task.
+    init - its an list of init predicates of the task.
     :param init:
     :return: list of statements
     """
@@ -211,7 +245,7 @@ def parse_init(init_descr):
     for st, end, _ in tree_sample(init_descr):
         predicate_descr = init_descr[st:end].strip()
         name = re.findall('^\w+', predicate_descr)
-        signatures = re.findall('(\?\w+) - (\w+)', predicate_descr)
+        signatures = [sign for sign in re.findall('\w+', predicate_descr) if sign != name[0]]
         ipredicate = PredicatesStmt(name, signatures)
         init.append(ipredicate)
     return init

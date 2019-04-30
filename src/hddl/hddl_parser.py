@@ -79,4 +79,5 @@ if __name__ == '__main__':
     parser = Parser(domain_file, problem_file)
     domain = parser.ParseDomain(parser.domain)
     problem = parser.ParseProblem(parser.problem)
+    print()
 
