@@ -3,6 +3,7 @@ from mapcore.mapplanner import MapPlanner
 from config_master import create_config, get_config
 import platform
 
+
 if __name__ == '__main__':
 
     config_path = ''

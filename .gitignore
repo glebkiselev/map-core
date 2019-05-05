@@ -9,3 +9,4 @@ __pychache__
 mapcore.egg-info
 env
 venv
+.DS_store

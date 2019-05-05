@@ -7,7 +7,7 @@
 		room_0 - room
 		room_1 - room
 		room_2 - room
-		I_agent - agent
+		I - agent
 	)
 	(:htn
 		:parameters ()

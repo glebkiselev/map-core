@@ -1,6 +1,6 @@
 import re
 import hddl.branch_parser as bch
-
+from src.grounding.hddl_grounding import *
 
 
 class Parser:
@@ -79,5 +79,8 @@ if __name__ == '__main__':
     parser = Parser(domain_file, problem_file)
     domain = parser.ParseDomain(parser.domain)
     problem = parser.ParseProblem(parser.problem)
+
+
+    ground(domain, problem)
     print()
 
