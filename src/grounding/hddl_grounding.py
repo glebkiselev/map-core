@@ -67,44 +67,120 @@ def _ground_action(name, parameters, preconditions, effect):
     for predicate in effect:
         __update_significance(predicate, effect=True)
 
-def __ground_single_method(method):
-    pass
+    return act_signif
 
-def __ground_method(method):
-    task = signs[method.task]
-    subtasks = {}
-    for tasknum, subtask in method.subtasks.items():
+def __ground_single_method(parameters, subtasks, ordering, task, task_parameters, subtask, domain):
+    actions = list(filter(lambda x: x.name ==subtask[0], domain['actions']))
+    if len(actions):
+        action = actions[0]
+        subtask_parameters = []
+        for param1 in subtask[1]:
+            for param2 in parameters:
+                if param1 == param2[0]:
+                    subtask_parameters.append(param2)
+        change = []
+        used = []
+        for param1 in subtask_parameters:
+            for param2 in action.parameters:
+                if param1[1] == param2[1]:
+                    if param1[0] != param2[0] and action.parameters.index(param2) not in used:
+                        change.append((param2[0], param1[0]))
+                        used.append(action.parameters.index(param2))
+                        break
+        preconditions = []
+        effect = []
+        for predicate in action.preconditions:
+            new_predicate = [predicate[0], []]
+            for signa in predicate[1]:
+                for pair in change:
+                    if signa == pair[0]:
+                        new_predicate[1].append(pair[1])
+                        break
+                else:
+                    new_predicate[1].append(signa)
+            preconditions.append(new_predicate)
+        for predicate in action.effect:
+            new_predicate = [predicate[0], []]
+            for signa in predicate[1]:
+                for pair in change:
+                    if signa == pair[0]:
+                        new_predicate[1].append(pair[1])
+                        break
+                else:
+                    new_predicate[1].append(signa)
+            effect.append(new_predicate)
+        signif = _ground_action(subtask[0], parameters, preconditions, effect)
+    else:
+        methods = list(filter(lambda x: x.task == subtask[0], domain['methods']))
+        if len(methods):
+            old_method = methods[0]
+            change = []
+            for param1 in subtask[1]:
+                for param2 in old_method.task_parameters:
+                    if subtask[1].index(param1) == old_method.task_parameters.index(param2) and param1 != param2:
+                        change.append((param2, param1))
+            old_params = []
+            for param2 in old_method.parameters:
+                for param1 in change:
+                    if param2[0] == param1[0]:
+                        old_params.append((param1[1], param2[1]))
+                        break
+                else:
+                    old_params.append(param2)
+            old_subtasks = {}
+            for tnum, stask in old_method.subtasks.items():
+                stask_signa = []
+                for param1 in stask[1]:
+                    for param2 in change:
+                        if param1 == param2[0]:
+                            stask_signa.append(param2[1])
+                            break
+                    else:
+                        stask_signa.append(param1)
+                old_subtasks[tnum] = (stask[0], stask_signa)
+            old_t_param = []
+            for param1 in old_method.task_parameters:
+                for param2 in change:
+                    if param1 == param2[0]:
+                        old_t_param.append(param2[1])
+                        break
+                else:
+                    old_t_param.append(param1)
+            signif = __ground_method(old_params, old_subtasks, old_method.ordering, old_method.task, old_t_param, domain)
+
+    return signif
+
+def __ground_method(parameters, subtasks, ordering, task, task_parameters, domain):
+    task = signs[task]
+    stasks = {}
+    for tasknum, subtask in subtasks.items():
         subtask_sign = signs[subtask[0]]
         subtask_params = set()
         for param in subtask[1]:
-            param_descr = list(filter(lambda x: x[0] == param, method.parameters))[0]
+            param_descr = list(filter(lambda x: x[0] == param, parameters))[0]
             subtask_params.add(param_descr[1] + param_descr[0])
         for _, signif in subtask_sign.significances.items():
             chains = signif.spread_down_activity('significance', 5)
             signif_roles = set([chain[-2].sign.name for chain in chains])
             if subtask_params <= signif_roles:
-                subtasks[tasknum] = signif
-            else:
-                print()# берем экшн домена и по параметрам меняем последовательность
-    if len(method.subtasks) == 1:
-        signif = subtasks['task0']
+                stasks[tasknum] = signif
+                break
+        else:
+            signif = __ground_single_method(parameters, subtasks, ordering, task, task_parameters, subtask, domain)
+            stasks[tasknum] = signif
+    if len(stasks) == 1:
+        signif = stasks['task0']
         task_signif = task.add_significance()
         connector = task_signif.add_feature(signif)
         signif.sign.add_out_significance(connector)
+    else:
+        task_signif = task.add_significance()
+        for task in ordering:
+            signif = stasks[task]
+            connector = task_signif.add_feature(signif)
+            signif.sign.add_out_significance(connector)
+    return task_signif
 
-    # else:
-    #     #TODO search for each signif with spread down activity
-    #     pass
-    #     print()
-        #
-        #
-        #
-        # if method.ordering:
-        #     for stask in method.ordering:
-        #         signif = subtasks[stask]
-        #         connector = task_signif.add_feature(signif)
-        #         signif.sign.add_out_significance(connector)
-        # else:
 
 def ground(domain, problem, agent = 'I', exp_signs=None):
     for type, stype in domain['types']:
@@ -134,7 +210,7 @@ def ground(domain, problem, agent = 'I', exp_signs=None):
 
     methods = sorted(domain['methods'], key= lambda method: len(method.subtasks))
     for method in methods:
-        __ground_method(method)
+        __ground_method(method.parameters, method.subtasks, method.ordering, method.task, method.task_parameters, domain)
     print()
 
 
