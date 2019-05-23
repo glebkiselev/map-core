@@ -23,7 +23,11 @@ def _ground_predicate(name, signature):
     pred_signif = pred_sign.add_significance()
     if len(signature):
         for signa in signature:
-            new_obj = __add_sign(signa[1]+signa[0])
+            if not signa[0].startswith('?'):
+                right = '?' + signa[0]
+            else:
+                right = signa[0]
+            new_obj = __add_sign(signa[1]+right)
             old_type = signs[signa[1]]
             if not [con for con in old_type.out_significances if con.in_sign == new_obj]:
                 old_signif = old_type.add_significance()
@@ -45,7 +49,10 @@ def _ground_action(name, parameters, preconditions, effect):
             for role in predicate[1]:
                 role_name = list(filter(lambda x: x[0] == role, parameters))
                 pred_signature.extend(role_name)
-                role_sig = role_name[0][1] + role_name[0][0]
+                if role_name[0][0].startswith('?'):
+                    role_sig = role_name[0][1] + role_name[0][0]
+                else:
+                    role_sig = role_name[0][1] + '?' + role_name[0][0]
                 try:
                     pred_signs.add(signs[role_sig])
                 except KeyError:
@@ -157,8 +164,11 @@ def __ground_method(parameters, subtasks, ordering, task, task_parameters, domai
         subtask_sign = signs[subtask[0]]
         subtask_params = set()
         for param in subtask[1]:
-            param_descr = list(filter(lambda x: x[0] == param, parameters))[0]
-            subtask_params.add(param_descr[1] + param_descr[0])
+            for param2 in parameters:
+                if param2[0].endswith(param):
+                    #param_descr = list(filter(lambda x: x[0].endswith(param), parameters))[0]
+                    subtask_params.add(param2[1] + param2[0])
+                    break
         for _, signif in subtask_sign.significances.items():
             chains = signif.spread_down_activity('significance', 5)
             signif_roles = set([chain[-2].sign.name for chain in chains])
@@ -182,6 +192,70 @@ def __ground_method(parameters, subtasks, ordering, task, task_parameters, domai
     return task_signif
 
 
+
+    # # create parameters simular to method
+    # parameters = []
+    # for _, task in htn.subtasks.items():
+    #     for obj in task[1]:
+    #         for item in problem['objects']:
+    #             if obj == item[0]:
+    #                 parameters.append(('?' + obj, item[1]))
+    # parameters.extend(htn.parameters)
+    # __ground_method(parameters, htn.subtasks, htn.ordering, htn_name, [], domain)
+
+
+def __ground_htn_subtask(name, args, domain, agent):
+    subt_sign = signs[name]
+    methods  = [method for method in domain['methods'] if method.task == name]
+    change = []
+    for method in methods:
+        tparams = []
+        for e1 in method.task_parameters:
+            for e2 in method.parameters:
+                if e1 == e2[0]:
+                    tparams.append(signs[e2[1]+e2[0]])
+                    break
+        if len(args) == len(tparams):
+            change = list(zip(tparams, [signs[arg].meanings[1] for arg in args]))
+            break
+
+    used = set()
+    htn = None
+    for _, signif in subt_sign.significances.items():
+        pm = signif.copy('significance', 'meaning')
+        chains = signif.spread_down_activity('significance', 6)
+        for chain in chains:
+            for pair in change:
+                if chain[-2].sign == pair[0] and pair[0] not in used:
+                    pm.replace('meaning', pair[0], pair[1])
+                    used.add(pair[0])
+                    break
+            if len(used) == len(change):
+                break
+        else:
+            subt_sign.remove_meaning(pm)
+
+        if pm:
+            htn = pm
+    if htn:
+        htn.replace('meaning', signs['agent?ag'], obj_means[signs['I']])
+    else:
+        print("Can't find appropriate realization for method - %s" %name)
+    return htn
+
+
+def _ground_htn_predicate(name, signature):
+    pred_sign = signs[name]
+    pred_im = pred_sign.add_image()
+    for element in signature:
+        el_sign = signs[element]
+        el_image = el_sign.add_image()
+        con = pred_im.add_feature(el_image)
+        el_sign.add_out_image(con)
+
+    return pred_im
+
+
 def ground(domain, problem, agent = 'I', exp_signs=None):
     for type, stype in domain['types']:
         stype_sign = __add_sign(stype)
@@ -192,8 +266,7 @@ def ground(domain, problem, agent = 'I', exp_signs=None):
 
     for obj, type in problem['objects']:
         obj_sign = __add_sign(obj)
-        if obj == 'I':
-            obj_means[obj_sign] = obj_sign.add_meaning()
+        obj_means[obj_sign] = obj_sign.add_meaning()
         type_sign = signs[type]
         tp_signif = type_sign.add_significance()
         connector = tp_signif.add_feature(obj_signifs[obj_sign], zero_out=True)
@@ -211,6 +284,27 @@ def ground(domain, problem, agent = 'I', exp_signs=None):
     methods = sorted(domain['methods'], key= lambda method: len(method.subtasks))
     for method in methods:
         __ground_method(method.parameters, method.subtasks, method.ordering, method.task, method.task_parameters, domain)
+
+    #Ground Init
+    for init in problem['inits']:
+        start = __add_sign('*start %s*'%str(problem['inits'].index(init)), False)
+        sit_im = start.add_image()
+        for predicate in init:
+            pred_im = _ground_htn_predicate(predicate.name, predicate.signature)
+            connector = sit_im.add_feature(pred_im)
+            pred_im.sign.add_out_image(connector)
+
+
+    #Ground htns to meanings
+    for htn in problem['htns']:
+        htn_name = 'htn_' + str(problem['htns'].index(htn))
+        htn_sign = __add_sign(htn_name, False)
+        htn_mean = htn_sign.add_meaning()
+        for task in htn.ordering:
+            subtask = htn.subtasks[task]
+            cm = __ground_htn_subtask(subtask[0], subtask[1], domain, agent)
+            connector = htn_mean.add_feature(cm)
+            cm.sign.add_out_meaning(connector)
     print()
 
 

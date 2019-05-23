@@ -13,7 +13,7 @@
 		(handempty ?ag - agent)
 	)
 	(:task deliver
-		:parameters (?b - block ?r - room)
+		:parameters (?bl- block ?r - room)
 		:precondition ()
 		:effect ()
 	)
@@ -25,24 +25,24 @@
 	)
 
 	(:task load
-		:parameters (?ag - agent ?r - room ?b - block)
+		:parameters (?ag - agent ?r - room ?bl - block)
 		:precondition ()
 		:effect ()
 	)
 
 	(:task unload
-		:parameters (?ag - agent ?r - room ?b - block)
+		:parameters (?ag - agent ?r - room ?bl - block)
 		:precondition ()
 		:effect ()
 	)
 	(:method m_deliver_ordering_0
-		:parameters (?r1 - room ?r2 - room ?b - block ?ag - agent)
-		:task (deliver ?b ?r2)
+		:parameters (?r1 - room ?r2 - room ?bl - block ?ag - agent)
+		:task (deliver ?bl ?r2)
 		:subtasks (and
 		 (task0 (get_to ?ag ?r1))
-		 (task1 (load ?ag ?r1 ?b))
+		 (task1 (load ?ag ?r1 ?bl))
 		 (task2 (get_to ?ag ?r2))
-		 (task3 (unload ?ag ?r2 ?b))
+		 (task3 (unload ?ag ?r2 ?bl))
 		)
 		:ordering (and
 			(task0 < task1)
@@ -52,18 +52,18 @@
 	)
 
 	(:method m_unload_ordering_0
-		:parameters (?r - room ?b - block ?ag - agent)
-		:task (unload ?ag ?r ?b)
+		:parameters (?r - room ?bl - block ?ag - agent)
+		:task (unload ?ag ?r ?bl)
 		:subtasks (and
-		 (task0 (putdown ?ag ?r ?b))
+		 (task0 (putdown ?ag ?r ?bl))
 		)
 	)
 
 	(:method m_load_ordering_0
-		:parameters (?r - room ?b - block ?ag - agent)
-		:task (load ?ag ?r ?b)
+		:parameters (?r - room ?bl - block ?ag - agent)
+		:task (load ?ag ?r ?bl)
 		:subtasks (and
-		 (task0 (pickup ?ag ?r ?b))
+		 (task0 (pickup ?ag ?r ?bl))
 		)
 	)
 
@@ -101,32 +101,32 @@
 	)
 
 	(:action pickup
-		:parameters (?ag - agent ?r - room ?b - block)
+		:parameters (?ag - agent ?r - room ?bl - block)
 		:precondition
 			(and
 				(at ?ag ?r)
-				(at ?b ?r)
+				(at ?bl ?r)
 				(handempty ?ag)
 			)
 		:effect
 			(and
-				(not (at ?b ?r))
+				(not (at ?bl ?r))
 				(not (handempty ?ag))
-				(holding ?b ?ag)
+				(holding ?bl ?ag)
 			)
 	)
 
 	(:action putdown
-		:parameters (?ag - agent ?r - room ?b - block)
+		:parameters (?ag - agent ?r - room ?bl - block)
 		:precondition
 			(and
 				(at ?ag ?r)
-				(holding ?b ?ag)
+				(holding ?bl ?ag)
 			)
 		:effect
 			(and
-				(not (holding ?b ?ag))
-				(at ?b ?r)
+				(not (holding ?bl ?ag))
+				(at ?bl ?r)
 				(handempty ?ag)
 			)
 	)
