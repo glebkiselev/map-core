@@ -1,6 +1,5 @@
 import itertools
 from copy import copy
-import numpy as np
 
 
 class CausalMatrix:
@@ -126,7 +125,7 @@ class CausalMatrix:
         @return: an object of class View
         """
 
-        if not isinstance(view, (list, tuple, np.ndarray)):
+        if not isinstance(view, (list, tuple)):
             raise Exception('Views can be only tuple, list or ndarray!')
 
         if effect:
@@ -273,6 +272,39 @@ class CausalMatrix:
                         for index, pm in pms.items():
                             check_pm(pm)
         return active_chains
+
+    def spread_down_htn_activity_act(self, base, depth):
+        """
+        Spread activity down in hierarchy from the HTN
+        @param base: name of semantic net that activity spreads on
+        @param depth: recursive depth of spreading
+        @return: List of Causal Matrices on the lowest level
+        """
+
+        active_matrices = []
+
+        def check_pm(pm):
+            if not pm.is_empty() and not pm.is_causal():
+                matrices = pm.spread_down_htn_activity_act(base, depth - 1)
+                active_matrices.extend(matrices)
+            else:
+                active_matrices.append(pm)
+        if depth > 0:
+            if self.effect:
+                print("Can't get inner matrices from the matrixe: {0} -> {1}".format(self.sign.name, self.index))
+            for event in self.cause:
+                for connector in event.coincidences:
+                    if connector.out_index > 0:
+                        # connector.out_sign with index
+                        pm = connector.get_out_cm(base)
+                        check_pm(pm)
+                    else:
+                        pms = getattr(connector.out_sign, base + 's')
+                        for index, pm in pms.items():
+                            check_pm(pm)
+        return active_matrices
+
+
 
     def spread_down_activity_view(self, depth):
         """

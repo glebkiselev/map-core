@@ -30,10 +30,10 @@ def _ground_predicate(name, signature):
             new_obj = __add_sign(signa[1]+right)
             old_type = signs[signa[1]]
             if not [con for con in old_type.out_significances if con.in_sign == new_obj]:
-                old_signif = old_type.add_significance()
-                connector = obj_signifs[new_obj].add_feature(old_signif)
+                old_signif = old_type.significances[1]
+                connector = obj_signifs[new_obj].add_feature(old_signif, zero_out=True)
                 old_type.add_out_significance(connector)
-            connector = pred_signif.add_feature(obj_signifs[new_obj])
+            connector = pred_signif.add_feature(obj_signifs[new_obj], zero_out=True)
             new_obj.add_out_significance(connector)
     return pred_signif
 
@@ -74,9 +74,15 @@ def _ground_action(name, parameters, preconditions, effect):
     for predicate in effect:
         __update_significance(predicate, effect=True)
 
+    I_sign = signs['I']
+    act_meaning = act_signif.copy('significance', 'meaning')
+    connector = act_meaning.add_feature(obj_means[I_sign])
+    efconnector = act_meaning.add_feature(obj_means[I_sign], effect=True)
+    I_sign.add_out_meaning(connector)
+
     return act_signif
 
-def __ground_single_method(parameters, subtasks, ordering, task, task_parameters, subtask, domain):
+def __ground_single_method(parameters, subtask, domain):
     actions = list(filter(lambda x: x.name ==subtask[0], domain['actions']))
     if len(actions):
         action = actions[0]
@@ -153,11 +159,11 @@ def __ground_single_method(parameters, subtasks, ordering, task, task_parameters
                         break
                 else:
                     old_t_param.append(param1)
-            signif = __ground_method(old_params, old_subtasks, old_method.ordering, old_method.task, old_t_param, domain)
+            signif = __ground_method(old_params, old_subtasks, old_method.ordering, old_method.task, domain)
 
     return signif
 
-def __ground_method(parameters, subtasks, ordering, task, task_parameters, domain):
+def __ground_method(parameters, subtasks, ordering, task, domain):
     task = signs[task]
     stasks = {}
     for tasknum, subtask in subtasks.items():
@@ -176,7 +182,7 @@ def __ground_method(parameters, subtasks, ordering, task, task_parameters, domai
                 stasks[tasknum] = signif
                 break
         else:
-            signif = __ground_single_method(parameters, subtasks, ordering, task, task_parameters, subtask, domain)
+            signif = __ground_single_method(parameters, subtask, domain)
             stasks[tasknum] = signif
     if len(stasks) == 1:
         signif = stasks['task0']
@@ -233,14 +239,11 @@ def __ground_htn_subtask(name, args, domain, agent):
             if len(used) == len(change):
                 break
         else:
-            subt_sign.remove_meaning(pm)
+            subt_sign.remove_significance(pm)
 
         if pm:
             htn = pm
-    if htn:
-        htn.replace('meaning', signs['agent?ag'], obj_means[signs['I']])
-    else:
-        print("Can't find appropriate realization for method - %s" %name)
+            break
     return htn
 
 
@@ -283,7 +286,7 @@ def ground(domain, problem, agent = 'I', exp_signs=None):
 
     methods = sorted(domain['methods'], key= lambda method: len(method.subtasks))
     for method in methods:
-        __ground_method(method.parameters, method.subtasks, method.ordering, method.task, method.task_parameters, domain)
+        __ground_method(method.parameters, method.subtasks, method.ordering, method.task, domain)
 
     #Ground Init
     for init in problem['inits']:

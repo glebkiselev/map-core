@@ -1,6 +1,7 @@
 import re
-import hddl.branch_parser as bch
+import src.hddl.branch_parser as bch
 from src.grounding.hddl_grounding import *
+from src.search.htnsearch import HTNSearch
 
 
 class Parser:
@@ -82,5 +83,8 @@ if __name__ == '__main__':
 
 
     ground(domain, problem)
+
+    htn = HTNSearch(signs)
+    plan = htn.search_plan()
     print()
 
