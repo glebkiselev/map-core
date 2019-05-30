@@ -61,17 +61,16 @@ class HTNSearch():
             chains = []
             for cm in active_signif:
                 if cm.sign == act_matrice.sign:
-                    chains .extend(cm.spread_down_activity('significance', 5))
+                    chains.extend(cm.spread_down_activity('significance', 5))
             merged_chains = []
             for chain in chains:
                 for achain in active_chains:
                     if chain[-1].sign == achain[-1].sign and len(chain) > 2 and chain not in merged_chains:
                         merged_chains.append(chain)
                         break
-            scripts = self._generate_meanings_htn(act_matrice, merged_chains)
-            meanings.extend(scripts)
-
-        applicable_meanings = self.applicable_search(meanings, active_pm)
+            meanings = self._generate_meanings_htn(act_matrice, merged_chains)
+            applicable_meanings = self.applicable_search(meanings, active_pm)
+            print()
 
         candidates = self._meta_check_activity(active_pm, applicable_meanings, [x for x, _, _, _ in current_plan])
 
@@ -317,7 +316,7 @@ class HTNSearch():
                                 new_map[chain[-1].sign] = [cm]
 
 
-                ma_combinations = self.mix_pairs(new_map)
+                ma_combinations = mix_pairs(new_map)
 
                 for ma_combination in ma_combinations:
                     cm = pm.copy('meaning', 'meaning')
@@ -530,44 +529,7 @@ class HTNSearch():
         pm = pm.copy('meaning', 'image')
         return pm
 
-    @staticmethod
-    def mix_pairs(replace_map):
-        """
-        mix roles and objects.
-        :param replace_map:
-        :return:
-        """
-        new_chain = {}
-        elements = []
-        merged_chains = []
-        used_roles = []
-        replace_map = list(replace_map.items())
-
-        def get_role(obj, roles):
-            for role in roles:
-                if obj in role[1]:
-                    return role
-
-        for item in replace_map:
-            elements.append(item[1])
-        elements = list(itertools.product(*elements))
-        clean_el = copy(elements)
-        for element in clean_el:
-            if not len(set(element)) == len(element):
-                elements.remove(element)
-        for element in elements:
-            for obj in element:
-                avalaible_roles = [x for x in replace_map if x not in used_roles]
-                role = get_role(obj, avalaible_roles)
-                if role:
-                    used_roles.append(role)
-                    new_chain[role[0]] = obj
-            merged_chains.append(new_chain)
-            new_chain = {}
-            used_roles = []
-        return merged_chains
-
-    def _generate_meanings_htn(self, act_signif, merged_chains):
+    def _generate_meanings_htn(self, action_meaning, merged_chains):
         def __get_role_index(chain):
             index = 0
             rev_chain = reversed(chain)
@@ -583,38 +545,38 @@ class HTNSearch():
                 else:
                     return index
             return None
-        # Find already changed roles
-        changed_roles = {}
-
-        pm_chains = act_signif.spread_down_activity('meaning', 5)
-        for chain in pm_chains:
-            for achain in merged_chains:
-                if chain[-1].sign == achain[-1].sign and len(chain) > 2:
-                    changed_roles.setdefault(chain[-1], set()).add(achain[-3].sign)
+        # # Find already changed roles
+        # changed_roles = {}
+        #
+        pm_chains = action_meaning.spread_down_activity('meaning', 5)
+        # for chain in pm_chains:
+        #     for achain in merged_chains:
+        #         if chain[-1].sign == achain[-1].sign and len(chain) > 2:
+        #             changed_roles.setdefault(chain[-1], set()).add(achain[-3].sign)
         # Find roles to change
         replace_map = {}
-        changed_signs = [cm.sign for cm in changed_roles]
+        #changed_signs = [cm.sign for cm in changed_roles]
         for chain in pm_chains:
             index = __get_role_index(chain)
-            if index != 0 and chain[index].sign not in replace_map and chain[index].sign not in changed_signs:
-                to_replace = {ch[-1] for ch in merged_chains if ch[-3].sign == chain[index].sign and ch[-1].sign not in changed_signs}
+            if index != 0 and chain[index].sign not in replace_map and chain[index].sign:
+                to_replace = {ch[-1] for ch in merged_chains if ch[-3].sign == chain[index].sign}
                 replace_map.setdefault(chain[index].sign, set()).update(to_replace)
-        # Update replace map by already changed roles
-        for obj, variants in changed_roles.items():
-            for var in variants:
-                if var not in replace_map:
-                    replace_map.setdefault(var, set()).add(obj)
+        # # Update replace map by already changed roles
+        # for obj, variants in changed_roles.items():
+        #     for var in variants:
+        #         if var not in replace_map:
+        #             replace_map.setdefault(var, set()).add(obj)
 
         connectors = [agent.out_meanings for agent in self.agents]
-        main_pm_len = len(act_signif.cause) + len(act_signif.effect) + 2
+        main_pm_len = len(action_meaning.cause) + len(action_meaning.effect) + 2
 
         mapped_actions = {}
         for agent_con in connectors:
             for con in agent_con:
-                if con.in_sign == act_signif.sign:
+                if con.in_sign == action_meaning.sign:
                     mapped_actions.setdefault(con.out_sign, set()).add(con.in_sign.meanings[con.in_index])
 
-        new_map = {}
+
         rkeys = {el for el in replace_map.keys()}
         pms = []
 
@@ -656,7 +618,7 @@ class HTNSearch():
                 for role_sign in role_signs:
                     new_map[role_sign] = replace_map[role_sign]
 
-                ma_combinations = self.mix_pairs(new_map)
+                ma_combinations = mix_pairs(new_map)
 
                 for ma_combination in ma_combinations:
                     cm = pm.copy('meaning', 'meaning')
@@ -676,7 +638,41 @@ class HTNSearch():
 
         return pms
 
+def mix_pairs(replace_map):
+    """
+    mix roles and objects.
+    :param replace_map:
+    :return:
+    """
+    new_chain = {}
+    elements = []
+    merged_chains = []
+    used_roles = []
+    replace_map = list(replace_map.items())
 
+    def get_role(obj, roles):
+        for role in roles:
+            if obj in role[1]:
+                return role
+
+    for item in replace_map:
+        elements.append(item[1])
+    elements = list(itertools.product(*elements))
+    clean_el = copy(elements)
+    for element in clean_el:
+        if not len(set(element)) == len(element):
+            elements.remove(element)
+    for element in elements:
+        for obj in element:
+            avalaible_roles = [x for x in replace_map if x not in used_roles]
+            role = get_role(obj, avalaible_roles)
+            if role:
+                used_roles.append(role)
+                new_chain[role[0]] = obj
+        merged_chains.append(new_chain)
+        new_chain = {}
+        used_roles = []
+    return merged_chains
 
 
 
