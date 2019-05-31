@@ -113,6 +113,7 @@
 				(not (at ?bl ?r))
 				(not (handempty ?ag))
 				(holding ?bl ?ag)
+				(at ?ag ?r)
 			)
 	)
 
@@ -127,6 +128,7 @@
 			(and
 				(not (holding ?bl ?ag))
 				(at ?bl ?r)
+				(at ?ag ?r)
 				(handempty ?ag)
 			)
 	)

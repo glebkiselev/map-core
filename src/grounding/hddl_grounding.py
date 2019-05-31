@@ -46,7 +46,7 @@ def _ground_action(name, parameters, preconditions, effect):
     def __update_significance(predicate, effect = False):
         pred_sign = signs[predicate[0]]
         if len(predicate[1]):
-            pred_signs = set()
+            pred_signs = []
             pred_signature = []
             for role in predicate[1]:
                 role_name = list(filter(lambda x: x[0] == role, parameters))
@@ -56,20 +56,25 @@ def _ground_action(name, parameters, preconditions, effect):
                 else:
                     role_sig = role_name[0][1] + '?' + role_name[0][0]
                 try:
-                    pred_signs.add(signs[role_sig])
+                    pred_signs.append(signs[role_sig])
                 except KeyError:
                     role_sign = __add_sign(role_sig)
-                    pred_signs.add(role_sign)
+                    pred_signs.append(role_sign)
 
-            for _, signif in pred_sign.significances.items():
-                if signif.get_signs() == pred_signs:
-                    connector = act_signif.add_feature(signif, effect=effect)
-                    pred_sign.add_out_significance(connector)
+            flag = True
+            pred_signif = None
+            for _, signif in copy(pred_sign.significances).items():
+                for pair in zip(pred_signs, signif.cause):
+                    if not pair[0] in pair[1].get_signs():
+                        break
+                else:
+                    flag = False
+                    pred_signif = signif
                     break
-            else:
+            if flag:
                 pred_signif = _ground_predicate(predicate[0], pred_signature)
-                connector = act_signif.add_feature(pred_signif, effect=effect)
-                pred_sign.add_out_significance(connector)
+            connector = act_signif.add_feature(pred_signif, effect=effect)
+            pred_sign.add_out_significance(connector)
 
     for predicate in preconditions:
         __update_significance(predicate)
@@ -94,14 +99,18 @@ def __ground_single_method(parameters, subtask, domain):
                 if param1 == param2[0]:
                     subtask_parameters.append(param2)
         change = []
-        used = []
-        for param1 in subtask_parameters:
-            for param2 in action.parameters:
-                if param1[1] == param2[1]:
-                    if param1[0] != param2[0] and action.parameters.index(param2) not in used:
-                        change.append((param2[0], param1[0]))
-                        used.append(action.parameters.index(param2))
-                        break
+        #used = []
+        if len(subtask_parameters) == len(action.parameters):
+            for pair in zip(subtask_parameters, action.parameters):
+                if pair[0] != pair[1]:
+                    change.append((pair[1][0], pair[0][0]))
+        # for param1 in subtask_parameters:
+        #     for param2 in action.parameters:
+        #         if param1[1] == param2[1]:
+        #             if param1[0] != param2[0] and action.parameters.index(param2) not in used:
+        #                 change.append((param2[0], param1[0]))
+        #                 used.append(action.parameters.index(param2))
+        #                 break
         preconditions = []
         effect = []
         changed = []
@@ -190,27 +199,17 @@ def __ground_method(parameters, subtasks, ordering, task, domain):
     task = signs[task]
     stasks = {}
     for tasknum, subtask in subtasks.items():
-        subtask_sign = signs[subtask[0]]
-        subtask_params = set()
-        for param in subtask[1]:
-            for param2 in parameters:
-                if param2[0].endswith(param):
-                    #param_descr = list(filter(lambda x: x[0].endswith(param), parameters))[0]
-                    subtask_params.add(param2[1] + param2[0])
-                    break
+        # subtask_params = set()
+        # for param in subtask[1]:
+        #     for param2 in parameters:
+        #         if param2[0].endswith(param):
+        #             #param_descr = list(filter(lambda x: x[0].endswith(param), parameters))[0]
+        #             subtask_params.add(param2[1] + param2[0])
+        #             break
         # создаем новую - если что - резонируем со старыми и если резонирует - удаляем
-        old_signifs = list(signs[subtask[0]].significances.values())
+        #old_signifs = list(signs[subtask[0]].significances.values())
         signif = __ground_single_method(parameters, subtask, domain)
         stasks[tasknum] = signif
-        # for _, signif in subtask_sign.significances.items():
-        #     chains = signif.spread_down_activity('significance', 5)
-        #     signif_roles = set([chain[-2].sign.name for chain in chains])
-        #     if subtask_params <= signif_roles:
-        #         stasks[tasknum] = signif
-        #         break
-        # else:
-        #     signif = __ground_single_method(parameters, subtask, domain)
-        #     stasks[tasknum] = signif
     if len(stasks) == 1:
         signif = stasks['task0']
         task_signif = task.add_significance()
@@ -258,20 +257,18 @@ def __ground_htn_subtask(name, args, domain):
         if not bothel:
             act = acts[fin_meth.ordering.index(stask)]
             htn_method = act.copy('significance', 'meaning')
-            connector = fin_meth_mean.add_feature(htn_method)
-            htn_method.sign.add_out_meaning(connector)
         else:
             act = acts[fin_meth.ordering.index(stask)]
             htn_method = act.copy('significance', 'meaning')
-            to_change = {}
-            for el1 in bothel:
-                for el2 in tparams:
-                    if el1 == el2[0]:
-                        to_change[signs[el2[1]+el2[0]]] = change[signs[el2[1]+el2[0]]]
-            for sign, cm in to_change.items():
-                htn_method.replace('meaning', sign, cm)
-            connector = fin_meth_mean.add_feature(htn_method)
-            htn_method.sign.add_out_meaning(connector)
+            # to_change = {}
+            # for el1 in bothel:
+            #     for el2 in tparams:
+            #         if el1 == el2[0]:
+            #             to_change[signs[el2[1]+el2[0]]] = change[signs[el2[1]+el2[0]]]
+        for sign, cm in change.items():
+            htn_method.replace('meaning', sign, cm)
+        connector = fin_meth_mean.add_feature(htn_method)
+        htn_method.sign.add_out_meaning(connector)
 
     return fin_meth_mean
 

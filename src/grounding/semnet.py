@@ -376,7 +376,9 @@ class Event:
         for connector in self.coincidences:
             for conn in event.coincidences:
                 if connector.out_sign == conn.out_sign:
-                    if connector.get_out_cm(base).get_signs() == conn.get_out_cm(base).get_signs():
+                    cm = connector.get_out_cm(base)
+                    pm = conn.get_out_cm(base)
+                    if cm.get_signs() == pm.get_signs():
                         break
             else:
                 return False
@@ -615,12 +617,12 @@ class Sign:
             deleted = []
         for event in cm.cause:
             for connector in event.coincidences:
-                if (connector.out_sign, connector.out_index) not in deleted:
+                if (connector.out_sign, connector.out_index) not in deleted and connector.out_index !=0:
                     connector.out_sign.remove_significance(connector.get_out_cm('significance'), deleted)
                     deleted.append((connector.out_sign, connector.out_index))
         for event in cm.effect:
             for connector in event.coincidences:
-                if (connector.out_sign, connector.out_index) not in deleted:
+                if (connector.out_sign, connector.out_index) not in deleted and connector.out_index !=0:
                     connector.out_sign.remove_significance(connector.get_out_cm('significance'), deleted)
                     deleted.append((connector.out_sign, connector.out_index))
 
