@@ -89,7 +89,8 @@ def _ground_action(name, parameters, preconditions, effect):
 
     return act_signif
 
-def __ground_single_method(parameters, subtask, domain):
+def __ground_single_method(parameters, subtask, domain, depth):
+    signifs = []
     actions = list(filter(lambda x: x.name ==subtask[0], domain['actions']))
     if len(actions):
         action = actions[0]
@@ -142,29 +143,37 @@ def __ground_single_method(parameters, subtask, domain):
             effect.append(new_predicate)
             changed.append(predicate)
         signif = _ground_action(subtask[0], parameters, preconditions, effect)
+        signifs.append(signif)
     else:
+        if depth <= 1:
+            return None
+            #raise Exception("Can not ground method with low depth")
         methods = list(filter(lambda x: x.task == subtask[0], domain['methods']))
-        if len(methods):
-            old_method = methods[0]
+        for old_method in methods:
             change = []
             for param1 in subtask[1]:
                 for param2 in old_method.task_parameters:
                     if subtask[1].index(param1) == old_method.task_parameters.index(param2) and param1 != param2:
                         change.append((param2, param1))
             new_params = []
-            for param2 in old_method.parameters:
-                for param1 in change:
-                    if param2[0] == param1[0]:
-                        new_params.append((param1[1], param2[1]))
-                        break
-                    elif param2[0] == param1[1]:
-                        new_params.append((param1[0], param2[1]))
-                        break
+            if change:
+                for param2 in old_method.parameters:
+                    for param1 in change:
+                        if param2[0] == param1[0]:
+                            new_params.append((param1[1], param2[1]))
+                            break
+                        elif param2[0] == param1[1]:
+                            new_params.append((param1[0], param2[1]))
+                            break
+                        else:
+                            new_params.append(param2)
+                            break
                     else:
                         new_params.append(param2)
-                        break
-                else:
-                    new_params.append(param2)
+            else:
+                signif = list(copy(signs[subtask[0]]).significances.values())
+                signifs.extend(signif)
+                return signifs
 
             old_subtasks = {}
             for tnum, stask in old_method.subtasks.items():
@@ -191,37 +200,40 @@ def __ground_single_method(parameters, subtask, domain):
                         break
                 else:
                     old_t_param.append(param1)
-            signif = __ground_method(new_params, old_subtasks, old_method.ordering, old_method.task, domain)
+            signif = __ground_method(new_params, old_subtasks, old_method.ordering, old_method.task, domain, depth - 1)
+            if signif:
+                signifs.extend(signif)
+    return signifs
 
-    return signif
-
-def __ground_method(parameters, subtasks, ordering, task, domain):
+def __ground_method(parameters, subtasks, ordering, task, domain, depth):
     task = signs[task]
     stasks = {}
+    task_signifs = []
     for tasknum, subtask in subtasks.items():
-        # subtask_params = set()
-        # for param in subtask[1]:
-        #     for param2 in parameters:
-        #         if param2[0].endswith(param):
-        #             #param_descr = list(filter(lambda x: x[0].endswith(param), parameters))[0]
-        #             subtask_params.add(param2[1] + param2[0])
-        #             break
-        # создаем новую - если что - резонируем со старыми и если резонирует - удаляем
         #old_signifs = list(signs[subtask[0]].significances.values())
-        signif = __ground_single_method(parameters, subtask, domain)
-        stasks[tasknum] = signif
+        signifs = __ground_single_method(parameters, subtask, domain, depth)
+        if signifs:
+            stasks[tasknum] = signifs
+        else:
+            return None
     if len(stasks) == 1:
-        signif = stasks['task0']
-        task_signif = task.add_significance()
-        connector = task_signif.add_feature(signif)
-        signif.sign.add_out_significance(connector)
-    else:
-        task_signif = task.add_significance()
-        for task in ordering:
-            signif = stasks[task]
+        signifs = stasks['task0']
+        for signif in signifs:
+            task_signif = task.add_significance()
             connector = task_signif.add_feature(signif)
             signif.sign.add_out_significance(connector)
-    return task_signif
+            task_signifs.append(task_signif)
+    else:
+        #task_signif = task.add_significance()
+        variants = mix_pairs(stasks)
+        for variant in variants:
+            task_signif = task.add_significance()
+            for order in ordering:
+                signif = variant[order]
+                connector = task_signif.add_feature(signif)
+                signif.sign.add_out_significance(connector)
+            task_signifs.append(task_signif)
+    return task_signifs
 
 
 def __ground_htn_subtask(name, args, domain):
@@ -236,7 +248,6 @@ def __ground_htn_subtask(name, args, domain):
                     tparams.append(e2)
                     break
         if len(args) == len(tparams):
-
             cms = [signs[arg].meanings[1] for arg in args]
             for param in tparams:
                 change[signs[param[1]+param[0]]] = cms[tparams.index(param)]
@@ -248,6 +259,11 @@ def __ground_htn_subtask(name, args, domain):
     chparams = [el[0] for el in tparams]
     fin_meth_mean = signs[fin_meth.task].add_meaning()
     acts = []
+
+    # Choose the correct significance
+
+
+
     for event in signs[fin_meth.task].significances[1].cause:
         for connector in event.coincidences:
             cm = getattr(connector.out_sign, 'significances')[connector.out_index]
@@ -285,6 +301,33 @@ def _ground_htn_predicate(name, signature):
     return pred_im
 
 
+def _create_methods_tree(domain):
+    import collections
+    """
+    Function that creates methods depth tree. Its need for prevent recursive including Causal Matrix to itself.
+    """
+    tree = {}
+    methods = sorted(domain['methods'], key=lambda method: len(method.subtasks))
+    methods_names = {method.task for method in methods}
+    actions_names = {action.name for action in domain['actions']}
+    for method in methods:
+        subtasks = {task[0] for task in method.subtasks.values()}
+        if subtasks.isdisjoint(actions_names):
+            level = 3
+        elif subtasks & actions_names and subtasks & methods_names:
+            level = 2
+        elif subtasks <= actions_names:
+            level = 1
+        else:
+            level = 0
+            print('Wrong method description')
+        tree.setdefault(level, []).append(method)
+
+    tree = collections.OrderedDict(sorted(tree.items()))
+
+    return tree
+
+
 def ground(domain, problem, agent = 'I', exp_signs=None):
     for type, stype in domain['types']:
         stype_sign = __add_sign(stype)
@@ -310,32 +353,33 @@ def ground(domain, problem, agent = 'I', exp_signs=None):
     for task in domain['tasks']:
         __add_sign(task.name, False)
 
-    methods = sorted(domain['methods'], key= lambda method: len(method.subtasks))
-    for method in methods:
-        __ground_method(method.parameters, method.subtasks, method.ordering, method.task, domain)
+    methods = _create_methods_tree(domain)
+    for depth, leaf in methods.items():
+        for method in leaf:
+            __ground_method(method.parameters, method.subtasks, method.ordering, method.task, domain, depth)
 
-    #Ground Init
-    for init in problem['inits']:
-        start = __add_sign('*start %s*'%str(problem['inits'].index(init)), False)
-        sit_im = start.add_image()
-        for predicate in init:
-            pred_im = _ground_htn_predicate(predicate.name, predicate.signature)
-            connector = sit_im.add_feature(pred_im)
-            pred_im.sign.add_out_image(connector)
-        sit_im.copy('image', 'meaning')
-
-
-    #Ground htns to meanings
-    for htn in problem['htns']:
-        htn_name = 'htn_' + str(problem['htns'].index(htn))
-        htn_sign = __add_sign(htn_name, False)
-        htn_mean = htn_sign.add_meaning()
-        for task in htn.ordering:
-            subtask = htn.subtasks[task]
-            cm = __ground_htn_subtask(subtask[0], subtask[1], domain)
-            connector = htn_mean.add_feature(cm)
-            cm.sign.add_out_meaning(connector)
-    print()
+    # #Ground Init
+    # for init in problem['inits']:
+    #     start = __add_sign('*start %s*'%str(problem['inits'].index(init)), False)
+    #     sit_im = start.add_image()
+    #     for predicate in init:
+    #         pred_im = _ground_htn_predicate(predicate.name, predicate.signature)
+    #         connector = sit_im.add_feature(pred_im)
+    #         pred_im.sign.add_out_image(connector)
+    #     sit_im.copy('image', 'meaning')
+    #
+    #
+    # #Ground htns to meanings
+    # for htn in problem['htns']:
+    #     htn_name = 'htn_' + str(problem['htns'].index(htn))
+    #     htn_sign = __add_sign(htn_name, False)
+    #     htn_mean = htn_sign.add_meaning()
+    #     for task in htn.ordering:
+    #         subtask = htn.subtasks[task]
+    #         cm = __ground_htn_subtask(subtask[0], subtask[1], domain)
+    #         connector = htn_mean.add_feature(cm)
+    #         cm.sign.add_out_meaning(connector)
+    # print()
 
 
 

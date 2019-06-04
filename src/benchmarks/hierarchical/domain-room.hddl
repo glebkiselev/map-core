@@ -36,7 +36,7 @@
 		:effect ()
 	)
 	(:method m_deliver_ordering_0
-		:parameters (?rA - room ?rB - room ?bl - block ?ag - agent)
+		:parameters (?rA - room ?rC - room ?bl - block ?ag - agent)
 		:task (deliver ?bl ?rB)
 		:subtasks (and
 		 (task0 (get_to ?ag ?rA))
@@ -68,19 +68,19 @@
 	)
 
 	(:method m_drive_to_ordering_0
-		:parameters (?rA - room ?rB - room ?ag - agent)
+		:parameters (?r - room ?rB - room ?ag - agent)
 		:task (get_to ?ag ?rB)
 		:subtasks (and
-		 (task0 (drive ?ag ?rA ?rB))
+		 (task0 (drive ?ag ?r ?rB))
 		)
 	)
 
 	(:method m_drive_to_via_ordering_0
-		:parameters (?rB - room ?r3 - room ?ag - agent)
-		:task (get_to ?ag ?r3)
+		:parameters (?r - room ?rC - room ?ag - agent)
+		:task (get_to ?ag ?rC)
 		:subtasks (and
-		 (task0 (get_to ?ag ?rB))
-		 (task1 (drive ?ag ?rB ?r3))
+		 (task0 (get_to ?ag ?r))
+		 (task1 (drive ?ag ?r ?rC))
 		)
 		:ordering (and
 			(task0 < task1)
