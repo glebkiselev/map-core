@@ -97,7 +97,7 @@ class MapPlanner():
 
         problem = self._parse(self.domain, self.problem)
         logger.info('Parsing was finished...')
-        manager = Manager(problem, self.agpath, self.agtype, self.refinement, backward=self.backward)
+        manager = Manager(problem, self.agpath, self.agtype, backward=self.backward)
         solution = manager.manage_agent()
         return solution
 

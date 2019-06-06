@@ -4,13 +4,13 @@ import importlib
 from multiprocessing import Process
 
 class Manager:
-    def __init__(self, problem, agpath = 'mapplanner.agent.agent_search', agtype = 'Agent', ref = 0, backward = True):
+    def __init__(self, problem, agpath = 'mapplanner.agent.agent_search', agtype = 'Agent', backward = True):
         self.problem = problem
         self.solution = []
         self.finished = None
         self.agtype = agtype
         self.agpath = agpath
-        self.ref = ref
+        self.ref = 1
         self.backward = backward
 
     def agent_start(self, agent):
@@ -36,7 +36,7 @@ class Manager:
         """
         class_ = getattr(importlib.import_module(self.agpath), self.agtype)
         workman = class_()
-        workman.initialize(self.problem, self.ref, self.backward)
+        workman.initialize(self.problem, self.backward)
         multiprocessing.set_start_method('spawn')
         ag = Process(target=self.agent_start, args = (workman, ))
         ag.start()

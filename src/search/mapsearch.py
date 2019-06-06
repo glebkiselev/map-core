@@ -10,10 +10,9 @@ import itertools
 MAX_CL_LV = 1
 
 class MapSearch():
-    def __init__ (self, task, ref, backward):
+    def __init__ (self, task, backward):
         self.world_model = task.signs
         self.MAX_ITERATION = 30
-        self.refinement_lv = ref
         self.exp_acts = []
         self.exp_sits = []
         self.backward = backward
@@ -59,7 +58,7 @@ class MapSearch():
         return applicable_meanings
 
     def _experience_parts(self, precedents):
-        if precedents and self.refinement_lv > 0:
+        if precedents:
             if not self.exp_sits:
                 self.exp_sits = [sign.images[1] for name, sign in self.world_model.items() if 'exp_situation' in name]
                 # old boundary situations include
@@ -117,7 +116,7 @@ class MapSearch():
             plan = copy(current_plan)
             subplan = None
             next_pm = self._time_shift_forward(active_pm.sign.meanings[1], script, backward=self.backward)
-            if script.sign.images and self.refinement_lv > 0:
+            if script.sign.images:
                 acts = []
                 for act in script.sign.images[1].spread_down_activity('image', 2):
                     if act[1] not in acts:

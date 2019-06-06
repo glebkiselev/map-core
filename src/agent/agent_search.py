@@ -11,7 +11,7 @@ class Agent:
         pass
 
     # Initialization
-    def initialize(self, problem,ref, backward):
+    def initialize(self, problem, backward):
         """
         This function allows agent to be initialized. We do not use basic __init__ to let
         user choose a valid variant of agent. You can take agent with othe abilities.
@@ -22,7 +22,6 @@ class Agent:
         self.problem = problem
         self.solution = []
         self.final_solution = ''
-        self.ref = ref
         self.backward = backward
 
     # Grounding tasks
@@ -45,7 +44,7 @@ class Agent:
         """
         task = self.load_sw()
         logging.info('Search start: {0}, Start time: {1}'.format(task.name, time.clock()))
-        search = MapSearch(task, self.ref, self.backward)
+        search = MapSearch(task, self.backward)
         solutions = search.search_plan()
         self.solution = search.long_relations(solutions)
         if self.backward:
