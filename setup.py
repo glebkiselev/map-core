@@ -6,7 +6,7 @@ with open('requirements.txt') as f:
 setup(
     name='mapcore',
     version='1.0.0',
-    packages=['mapcore', 'mapcore.grounding', 'mapcore.pddl', 'mapcore.search', 'mapcore.agent'],
+    packages=['mapcore', 'mapcore.grounding', 'mapcore.pddl', 'mapcore.search', 'mapcore.agent', 'mapcore.hddl'],
     package_dir={'mapcore': 'src'},
     url='http://cog-isa.github.io/mapplanner/',
     license='',

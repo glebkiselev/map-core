@@ -1,10 +1,7 @@
 import re
-import src.hddl.branch_parser as bch
-from src.grounding.hddl_grounding import *
-from src.search.htnsearch import HTNSearch
+import mapcore.hddl.branch_parser as bch
 
-
-class Parser:
+class HTNParser:
     def __init__(self, domain_file, problem_file):
         with open(domain_file, 'r+') as dom:
             domain = dom.read()
@@ -72,19 +69,19 @@ class Parser:
         self.utokens = [':objects', ':htn', ':init']
         return self.ParseBlock(descr)
 
-if __name__ == '__main__':
-
-    domain_file = '../benchmarks/hierarchical/domain-room.hddl'
-    problem_file = '../benchmarks/hierarchical/pRfile01.hddl'
-
-    parser = Parser(domain_file, problem_file)
-    domain = parser.ParseDomain(parser.domain)
-    problem = parser.ParseProblem(parser.problem)
-
-
-    ground(domain, problem)
-
-    htn = HTNSearch(signs)
-    plan = htn.search_plan()
-    print()
+# if __name__ == '__main__':
+#
+#     domain_file = '../benchmarks/hierarchical/domain.hddl'
+#     problem_file = '../benchmarks/hierarchical/task1.hddl'
+#
+#     parser = Parser(domain_file, problem_file)
+#     domain = parser.ParseDomain(parser.domain)
+#     problem = parser.ParseProblem(parser.problem)
+#
+#
+#     ground(domain, problem)
+#
+#     htn = HTNSearch(signs)
+#     plan = htn.search_plan()
+#     print()
 
