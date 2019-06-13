@@ -4,11 +4,11 @@ import importlib
 from multiprocessing import Process
 
 class Manager:
-    def __init__(self, problem, agpath = 'mapplanner.agent.agent_search', agtype = 'Agent', backward = True):
+    def __init__(self, problem, agpath = 'mapplanner.agent.agent_search', backward = True):
         self.problem = problem
         self.solution = []
         self.finished = None
-        self.agtype = agtype
+        self.agtype = 'Agent'
         self.agpath = agpath
         self.ref = 1
         self.backward = backward
