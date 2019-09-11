@@ -1,5 +1,0 @@
-include src/benchmarks/hierarchical/*.hddl
-include src/benchmarks/simple/blocks/*.pddl
-include src/benchmarks/hierarchical/*.ini
-include src/benchmarks/simple/blocks/*.ini
-

@@ -1,0 +1,15 @@
+MANIFEST.in
+setup.py
+content/book1.pdf
+content/roles2017.pdf
+content/swm2014.pdf
+content/swm2015.pdf
+src/__init__.py
+src/agent.py
+src/components/__init__.py
+src/components/semnet.py
+src/components/sign_task.py
+swm.egg-info/PKG-INFO
+swm.egg-info/SOURCES.txt
+swm.egg-info/dependency_links.txt
+swm.egg-info/top_level.txt
