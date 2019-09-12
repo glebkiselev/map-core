@@ -1,5 +1,6 @@
 import re
-import planning.parsers.branch_parser as bch
+from mapcore.planning.parsers import branch_parser as bch
+
 
 class HTNParser:
     def __init__(self, domain_file, problem_file):

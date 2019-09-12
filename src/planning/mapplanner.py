@@ -1,6 +1,6 @@
 import logging
 import os
-from planning.agent.planning_agent import Manager
+from mapcore.planning.agent.planning_agent import Manager
 
 SOLUTION_FILE_SUFFIX = '.soln'
 
@@ -70,19 +70,19 @@ class MapPlanner():
 
         return domain, problem
 
-    def _parse_pddl(self, domain_file, problem_file):
+    def _parse_pddl(self):
         """
         pddl Parser
         :param domain_file:
         :param problem_file:
         :return:
         """
-        from planning.parsers.pddl_parser import Parser
+        from mapcore.planning.parsers.pddl_parser import Parser
 
-        parser = Parser(domain_file, problem_file)
-        logging.info('Parsing Domain {0}'.format(domain_file))
+        parser = Parser(self.domain, self.problem)
+        logging.info('Parsing Domain {0}'.format(self.domain))
         domain = parser.parse_domain()
-        logging.info('Parsing Problem {0}'.format(problem_file))
+        logging.info('Parsing Problem {0}'.format(self.problem))
         problem = parser.parse_problem(domain)
         logging.debug(domain)
         logging.info('{0} Predicates parsed'.format(len(domain.predicates)))
@@ -91,14 +91,14 @@ class MapPlanner():
         logging.info('{0} Constants parsed'.format(len(domain.constants)))
         return problem
 
-    def _parse_hddl(self, domain_file, problem_file):
+    def _parse_hddl(self):
         """
         pddl Parser
         :param domain_file:
         :param problem_file:
         :return:
         """
-        from planning.parsers.hddl_parser import HTNParser
+        from mapcore.planning.parsers.hddl_parser import HTNParser
         parser = HTNParser(self.domain, self.problem)
         logging.info('Parsing was finished...')
         logging.info('Parsing Domain {0}'.format(self.domain))
@@ -116,9 +116,9 @@ class MapPlanner():
         :return: the final solution
         """
         if self.TaskType == 'hddl':
-            problem = self._parse_hddl(self.domain, self.problem)
+            problem = self._parse_hddl()
         else:
-            problem = self._parse_pddl(self.domain, self.problem)
+            problem = self._parse_pddl()
         logger.info('Parsing was finished...')
         manager = Manager(problem, self.agpath, TaskType=self.TaskType, backward=self.backward)
         solution = manager.manage_agent()

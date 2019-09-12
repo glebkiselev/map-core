@@ -1,15 +1,14 @@
 import importlib
 import logging
 import multiprocessing
-import os
 import random
 import time
 from copy import copy
 
-from planning.grounding import pddl_grounding
-from planning.search.mapsearch import MapSearch
-from planning.grounding import hddl_grounding
-from swm.agent import Agent
+from mapcore.planning.grounding import pddl_grounding
+from mapcore.planning.search.mapsearch import MapSearch
+from mapcore.planning.grounding import hddl_grounding
+from mapcore.swm.src.agent import Agent
 
 
 class PlanningAgent(Agent):
@@ -38,7 +37,7 @@ class PlanningAgent(Agent):
     # Grounding tasks
     def get_task(self):
         """
-        This functions is needed to load world-model.
+        This functions is needed to load swm.
         :return: task - sign representation of the problem.
         """
         logging.info('Grounding start: {0}'.format(self.problem.name))

@@ -4,10 +4,11 @@ with open('requirements.txt') as f:
     required = f.read().splitlines()
 
 setup(
-    name='planning',
+    name='mapcore',
     version='1.0.0',
-    packages=['planning', 'planning.grounding', 'planning.parsers', 'planning.search', 'planning.agent'],
-    package_dir={'planning': 'src'},
+    packages=['mapcore', 'mapcore.swm', 'mapcore.swm.src', 'mapcore.swm.src.components', 'mapcore.planning', 'mapcore.planning', 'mapcore.planning.agent', 'mapcore.planning.grounding',
+              'mapcore.planning.parsers', 'mapcore.planning.search'],
+    package_dir={'mapcore': 'src'},
     url='https://github.com/glebkiselev/map-core.git',
     license='',
     author='KiselevGA',

@@ -1,7 +1,7 @@
 import logging
 
-import planning.grounding.planning_task as st
-from swm.components.semnet import Sign
+from mapcore.swm.src.components import sign_task as st
+from mapcore.swm.src.components.semnet import Sign
 from copy import copy
 import itertools
 

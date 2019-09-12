@@ -4,7 +4,7 @@ import os
 import pickle
 
 DEFAULT_FILE_PREFIX = 'wmodel_'
-DEFAULT_FILE_SUFFIX = '.world-model'
+DEFAULT_FILE_SUFFIX = '.swm'
 
 SIT_COUNTER = 0
 SIT_PREFIX = 'situation_'
@@ -51,7 +51,7 @@ class Task:
 
     def save_signs(self):
         """
-        Cleaning world-model and saving signs
+        Cleaning swm and saving signs
         """
         def __is_role(pm):
             chains = pm.spread_down_activity('meaning', 6)
@@ -63,7 +63,7 @@ class Task:
                 return False
             return True
 
-        logging.info('\tCleaning world-model...')
+        logging.info('\tCleaning swm...')
 
         for name, s in self.signs.copy().items():
             signif=list(s.significances.items())
@@ -91,7 +91,7 @@ class Task:
 
         file_name = DEFAULT_FILE_PREFIX + datetime.datetime.now().strftime('%m_%d_%H_%M') + DEFAULT_FILE_SUFFIX
         logging.info('Start saving to {0}'.format(file_name))
-        logging.info('\tDumping world-model...')
+        logging.info('\tDumping swm...')
         pickle.dump(self.signs, open(file_name, 'wb'))
-        logging.info('\tDumping world-model finished')
+        logging.info('\tDumping swm finished')
         return file_name

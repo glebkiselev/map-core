@@ -15,9 +15,9 @@ class Agent:
         self.name = name
 
     def load_swm(self):
-        from swm.components.sign_task import load_signs
+        from src.swm import load_signs
         """
-        This functions is needed to load world-model.
+        This functions is needed to load swm.
         :return: signs
         """
         logging.info('Loading start: {0}'.format(self.name))
