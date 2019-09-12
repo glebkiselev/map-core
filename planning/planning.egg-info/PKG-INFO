@@ -7,7 +7,7 @@ Author: KiselevGA
 Author-email: kiselev@isa.ru
 License: UNKNOWN
 Description: 
-        ![Sign World Model](SWM.png "Title")
+        ![Sign World Model](SWM_planning_basic.png "Title")
         
         **MAPPLANNER** is an open source library that allows building a semiotic network 
         of characters based on the input data described in the common formats .pddl and .hddl. 
