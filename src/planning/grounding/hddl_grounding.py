@@ -1,6 +1,6 @@
-from swm.components.semnet import Sign
-from planning.grounding.planning_task import PlanningTask as Task
-from planning.search.mapsearch import mix_pairs
+from mapcore.swm.src.components.semnet import Sign
+from mapcore.planning.grounding.planning_task import PlanningTask as Task
+from mapcore.planning.search.mapsearch import mix_pairs
 from copy import copy
 
 signs = {}

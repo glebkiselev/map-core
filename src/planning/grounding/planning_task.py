@@ -2,8 +2,8 @@ import datetime
 import logging
 import pickle
 
-from swm.components.semnet import Sign
-from swm.components.sign_task import Task
+from mapcore.swm.src.components.semnet import Sign
+from mapcore.swm.src.components.sign_task import Task
 
 DEFAULT_FILE_PREFIX = 'wmodel_'
 DEFAULT_FILE_SUFFIX = '.swm'

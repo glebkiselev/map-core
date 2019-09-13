@@ -15,7 +15,7 @@ class Agent:
         self.name = name
 
     def load_swm(self):
-        from src.swm import load_signs
+        from mapcore.swm.src.components.sign_task import load_signs
         """
         This functions is needed to load swm.
         :return: signs

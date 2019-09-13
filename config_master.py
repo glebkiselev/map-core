@@ -17,15 +17,15 @@ def create_config(domen = 'blocks', task_num = '1', refinement_lv = '1', benchma
         elif task_type != 'pddl':
             print('Wrong task_type!!! (pddl or hddl)!!')
             sys.exit(1)
-        path_bench = 'benchmarks' +delim + folder
+        path_bench = 'planning'+delim+'benchmarks' +delim + folder
         if not isinstance(task_num, str):
             task_num = str(task_num)
-        p_FILE = pkg_resources.resource_filename('planning', path_bench+'task'+task_num+ext)
+        p_FILE = pkg_resources.resource_filename('mapcore', path_bench+'task'+task_num+ext)
         try:
-            domain_load = pkg_resources.resource_filename('planning', path_bench+domain+ext)
+            domain_load = pkg_resources.resource_filename('mapcore', path_bench+domain+ext)
         except KeyError:
             domain = domain+task_num
-            domain_load = pkg_resources.resource_filename('planning', path_bench + domain + ext)
+            domain_load = pkg_resources.resource_filename('mapcore', path_bench + domain + ext)
         path = "".join([p.strip() + delim for p in p_FILE.split(delim)[:-1]])
     else:
         splited = benchmark.split(delim)
@@ -38,7 +38,7 @@ def create_config(domen = 'blocks', task_num = '1', refinement_lv = '1', benchma
     config.set("Settings", "domain", domain)
     config.set("Settings", "path", path)
     config.set("Settings", "task", task_num)
-    config.set("Settings", "agpath", "planning.agent.planning_agent")
+    config.set("Settings", "agpath", "mapcore.planning.agent.planning_agent")
     config.set("Settings", "agtype", "PlanningAgent")
     config.set("Settings", "backward", backward)
     config.set("Settings", "refinement_lv", refinement_lv)
