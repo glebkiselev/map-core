@@ -53,15 +53,13 @@ def ground(problem, plagent, exp_signs = None):
         __ground_method(method.parameters, method.subtasks, method.ordering, method.task, domain, 2)
 
     #Ground Init
-    start = None
-    for init in problem.inits:
-        start = __add_sign('*start %s*'%str(problem.inits.index(init)), False)
-        sit_im = start.add_image()
-        for predicate in init:
-            pred_im = _ground_htn_predicate(predicate.name, predicate.signature, plagent)
-            connector = sit_im.add_feature(pred_im)
-            pred_im.sign.add_out_image(connector)
-        sit_im.copy('image', 'meaning')
+    start = __add_sign('*start %s*' % str(problem.name), False)
+    sit_im = start.add_image()
+    for predicate in problem.init:
+        pred_im = _ground_htn_predicate(predicate.name, predicate.signature, plagent)
+        connector = sit_im.add_feature(pred_im)
+        pred_im.sign.add_out_image(connector)
+    sit_im.copy('image', 'meaning')
 
     #Ground htns to meanings
     goal = None

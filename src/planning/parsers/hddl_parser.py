@@ -57,7 +57,10 @@ class HTNParser:
                 else:
                     part = part[:-1]
                 parsed = getattr(bch, 'parse_'+start_token[1:])(part)
-                block.setdefault(start_token[1:] +'s', []).append(parsed)
+                if start_token[1:] != 'init':
+                    block.setdefault(start_token[1:] +'s', []).append(parsed)
+                else:
+                    block[start_token[1:]] = parsed
                 self.utokens.remove(start_token)
                 flag = True
         return block
@@ -81,12 +84,12 @@ class Problem:
         domain: The domain in which the problem has to be solved
         objects: A dict name->type of objects that are used in the problem
         init: A list of predicates describing the initial state
-        goal: A list of predicates describing the goal state
+        htns: high level actions that need to be completed in a current task
         """
         self.name = name
         self.domain = domain
         self.objects = task['objects']
-        self.inits = task['inits']
+        self.init = task['init']
         self.htns = task['htns']
 
     def __repr__(self):
