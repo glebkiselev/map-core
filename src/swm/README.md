@@ -12,19 +12,5 @@ about a sign world model you can find in:
 3. [Управление поведением как функция сознания 2. Синтез плана поведения.](content/swm2015.pdf)
 4. [Знаковый подход к задаче распределения ролей в
 коалиции когнитивных агентов.](content/roles2017.pdf)
-## Installation
-
-To install the current release:
-
-```
->>>python3 setup.py sdist
->>>python3 setup.py install
-```
-
-To run the test example:
-
-```
-python3 test.py
-```
 
 All feedback you can send to [email](mailto:kiselev@isa.ru)

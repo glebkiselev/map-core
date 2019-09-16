@@ -8,15 +8,6 @@ cognitive function of a person - planning.
 This library implements [case-based planning](https://www.sciencedirect.com/book/9780123220608/case-based-planning) 
 and [HTN planning](https://en.wikipedia.org/wiki/Hierarchical_task_network).
 
-## Installation
-
-To install the current release:
-
-```
->>>python3 setup.py sdist
->>>python3 setup.py install
-```
-
 To run the test example:
 
 ```
