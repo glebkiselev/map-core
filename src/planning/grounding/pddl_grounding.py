@@ -68,9 +68,13 @@ def ground(problem, agent, exp_signs=None):
         updated_predicates = _update_predicates(predicates, actions)
         signify_predicates(predicates, updated_predicates, signs, subtype_map, domain.constants)
         signify_actions(actions, signs, obj_means)
-
+        situation = Sign('situation')
+        signs[situation.name] = situation
+    else:
+        situation = signs['situation']
     start_situation, pms = _define_situation('*start*', problem.initial_state, signs, 'image')
     goal_situation, pms = _define_situation('*finish*', problem.goal, signs, 'image')
+
     if problem.name.startswith("blocks"):
         list_signs = task_signs(problem)
         _expand_situation_blocks(goal_situation, signs, pms, list_signs)
@@ -425,6 +429,11 @@ def _define_situation(name, predicates, signs, network = 'image'):
                     getattr(fact_sign, 'add_out_' + network)(conn)
                     conn = pred_cm.add_feature(fact_image)
                     getattr(fact_sign, 'add_out_' + network)(conn)
+
+    global_situation = signs['situation']
+    global_cm = getattr(global_situation, 'add_'+network)()
+    connector = global_cm.add_feature(sit_cm)
+    getattr(situation, 'add_out_' + network)(connector)
     return situation, elements
 
 

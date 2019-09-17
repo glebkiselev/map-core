@@ -679,6 +679,24 @@ class Sign:
                     active_pms |= pms
         return active_pms
 
+    def spread_down_activity_obj(self, base, depth):
+        """
+        Spread activity down in hierarchy
+        @param base: type of semantic net that activity spreads on
+        @param depth: recursive depth of spreading
+        @return: active matrices
+        """
+        active_pms = set()
+        if depth > 0:
+            for _, cm in getattr(self, base + 's').items():
+                if not cm.is_causal():
+                    for event in cm.cause:
+                        for connector in event.coincidences:
+                            active_pms.add(connector.get_out_cm(base))
+                            pms = connector.out_sign.spread_down_activity_obj(base, depth - 1)
+                            active_pms |= pms
+        return active_pms
+
     def spread_up_act_one(self, base):
         pms = set()
         for connector in getattr(self, 'out_' + base + 's'):

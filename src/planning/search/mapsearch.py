@@ -16,7 +16,7 @@ class MapSearch():
     def __init__ (self, task, TaskType, backward):
         self.world_model = task.signs
         self.exp_acts = []
-        self.exp_sits = []
+        self.exp_sits = set()
         self.backward = backward
         self.TaskType = TaskType
         self.scenario = None
@@ -119,7 +119,7 @@ class MapSearch():
                 for act in script.sign.images[1].spread_down_activity('image', 2):
                     if act[1] not in acts:
                         acts.append(act[1])
-                self.exp_sits.append(next_pm)
+                self.exp_sits.add(next_pm)
                 subplan = self.hierarchical_exp_search(active_pm, next_pm, iteration, prev_state, acts)
             if not subplan:
                 plan.append((active_pm, name, script, ag_mask))
@@ -153,18 +153,12 @@ class MapSearch():
         for cm in self.precedents:
             result, checked = self._check_activity(cm, active_cm, self.backward, True)
             if result:
-                agent = self.I_sign
-                if result:
-                    precedents.append((agent, checked))
+                precedents.append((self.I_sign, checked))
         return precedents
 
     def _precedent_activation(self):
         if not self.exp_sits:
-            self.exp_sits = [sign.images[1] for name, sign in self.world_model.items() if 'exp_situation' in name]
-            # finish include
-            old_fnst = [sign.images[1] for name, sign in self.world_model.items() if
-                        ('*finish*' in name or '*start*' in name) and len(name) > 8]
-            self.exp_sits.extend(old_fnst)
+            self.exp_sits = self.world_model['situation'].spread_down_activity_obj('image', 1)
         if not self.exp_acts:
             self.exp_acts = self.hierarch_acts()
 
@@ -188,10 +182,7 @@ class MapSearch():
     def _experience_parts(self, precedents):
         if precedents:
             if not self.exp_sits:
-                self.exp_sits = [sign.images[1] for name, sign in self.world_model.items() if 'exp_situation' in name]
-                # old boundary situations include
-                old_fnst = [sign.images[1] for name, sign in self.world_model.items() if ('*finish*' in name or '*start*' in name) and len(name)>len('*finish*')]
-                self.exp_sits.extend(old_fnst)
+                self.exp_sits = self.world_model['situation'].spread_down_activity_obj('image', 1)
             if not self.exp_acts:
                 self.exp_acts = self.hierarch_acts()
 
@@ -525,6 +516,10 @@ class MapSearch():
         for event in self._applicable_events(script, effect=not backward):
             pm.add_event(event.copy(pm, 'meaning', 'meaning', copied))
         pm = pm.copy('meaning', 'image')
+        global_situation = self.world_model['situation']
+        global_cm = global_situation.add_image()
+        connector = global_cm.add_feature(pm)
+        next_situation.add_out_image(connector)
         return pm
 
 

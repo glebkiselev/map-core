@@ -31,7 +31,7 @@ class PlanningTask(Task):
 
     def save_classic(self, plan):
         logging.info('\tSaving precedent classically...')
-        plan_sign, _, _ = self.save_plan(self.signs['exp_'+self.start_situation.name].images[1], self.signs['exp_'+self.goal_situation.name].images[1], plan, '')
+        plan_sign, _, _ = self.save_plan(self.signs[self.start_situation.name].images[1], self.signs[self.goal_situation.name].images[1], plan, '')
         # Add connection to goal situation
         goal_signif = self.goal_situation.add_significance()
         connector = goal_signif.add_feature(plan_sign.significances[1])
@@ -93,15 +93,15 @@ class PlanningTask(Task):
                             else:
                                 if pm not in pms_act:
                                     s.remove_meaning(pm)
+            global_sit = self.signs['situation']
+            for _, im in global_sit.images.copy().items():
+                pm_signs = im.get_signs()
+                for sign in pm_signs:
+                    if sign not in plan_sit:
+                        global_sit.remove_image(im)
 
-            #saving exp_situations
-            exp_signs = []
-            for sit in plan_sit:
-                exp_signs.append(sit.rename('exp_' + sit.name))
-
-            for exp in exp_signs:
-                if exp.name not in self.signs:
-                    self.signs[exp.name] = exp
+            self.signs[self.start_situation.name] = self.start_situation
+            self.signs[self.goal_situation.name] = self.goal_situation
 
             self.save_classic(pms_act)
 
