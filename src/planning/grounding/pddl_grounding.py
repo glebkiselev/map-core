@@ -42,6 +42,7 @@ def ground(problem, agent, exp_signs=None):
         obj_means[I_sign] = I_sign.add_meaning()
         obj_signifs[I_sign] = I_sign.add_significance()
         signs[I_sign.name] = I_sign
+        signs['situation'] = Sign('situation')
 
     for obj in objects:
         obj_sign = Sign(obj)
@@ -68,10 +69,7 @@ def ground(problem, agent, exp_signs=None):
         updated_predicates = _update_predicates(predicates, actions)
         signify_predicates(predicates, updated_predicates, signs, subtype_map, domain.constants)
         signify_actions(actions, signs, obj_means)
-        situation = Sign('situation')
-        signs[situation.name] = situation
-    else:
-        situation = signs['situation']
+
     start_situation, pms = _define_situation('*start*', problem.initial_state, signs, 'image')
     goal_situation, pms = _define_situation('*finish*', problem.goal, signs, 'image')
 

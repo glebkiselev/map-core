@@ -15,11 +15,15 @@ PLAN_PREFIX = 'action_'
 
 class PlanningTask(Task):
     def __init__(self, name, signs, start_situation, goal_situation, subtasks=None):
+        super().__init__(name, signs)
         self.name = name
         self.signs = signs
         self.start_situation = start_situation
         self.goal_situation = goal_situation
         self.subtasks = subtasks
+        self.I_obj = [con.in_sign for con in self.signs["I"].out_significances if con.out_sign.name == "I"]
+        self.agents = [self.signs["I"]]
+        self.agents.extend(self.I_obj)
 
     def __str__(self):
         s = 'Task {0}\n  Signs:  {1}\n  Start:  {2}\n  Goal: {3}\n'
@@ -55,13 +59,9 @@ class PlanningTask(Task):
             return True
 
         logging.info('Plan preparation to save...')
-
-        I_obj = [con.in_sign for con in self.signs["I"].out_significances if con.out_sign.name == "I"]
         if plan:
             logging.info('\tCleaning swm...')
 
-            agents = [self.signs["I"]]
-            agents.extend(I_obj)
             self.start_situation.name += self.name
             self.goal_situation.name += self.name
 
@@ -88,7 +88,7 @@ class PlanningTask(Task):
                 elif len(signif):
                     if len(signif[0][1].cause) and len(signif[0][1].effect): #delete action's meanings that are not in plan
                         for index, pm in s.meanings.copy().items():
-                            if __is_role(pm, agents):  # delete only fully signed actions
+                            if __is_role(pm, self.agents):  # delete only fully signed actions
                                 continue
                             else:
                                 if pm not in pms_act:
@@ -114,8 +114,8 @@ class PlanningTask(Task):
                     sign.out_meanings = []
                     sign.images = {}
                     sign.out_images = []
-        if I_obj:
-            I_obj = "_"+I_obj[0].name
+        if self.I_obj:
+            I_obj = "_"+self.I_obj[0].name
         else:
             I_obj = 'I'
         file_name = DEFAULT_FILE_PREFIX + datetime.datetime.now().strftime('%m_%d_%H_%M') + I_obj + DEFAULT_FILE_SUFFIX
