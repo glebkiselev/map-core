@@ -35,12 +35,19 @@ class MapPlanner():
         :return: full path to the domain
         """
         if not file in os.listdir(path):
-            new_path = delim
-            for element in path.split(delim)[1:-2]:
+            path_to_list = path.split(delim)[:-2]
+            if platform.system() != 'Windows':
+                new_path = delim
+            else:
+                new_path = path_to_list[0]+delim
+            path_to_list = path_to_list[1:]
+            for element in path_to_list:
                 new_path+=element + delim
             return self.search_upper(new_path, file)
         else:
-            return path + delim + file
+            if not path.endswith(delim):
+                path = path + delim
+            return path + file
 
 
     def find_domain(self, domain, path, number):
