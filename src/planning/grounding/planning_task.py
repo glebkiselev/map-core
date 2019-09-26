@@ -89,7 +89,10 @@ class PlanningTask(Task):
                     if len(signif[0][1].cause) and len(signif[0][1].effect): #delete action's meanings that are not in plan
                         for index, pm in s.meanings.copy().items():
                             if __is_role(pm, self.agents):  # delete only fully signed actions
-                                continue
+                                if len(pm.cause)-1 == len(signif[0][1].cause) and len(pm.effect)-1 == len(signif[0][1].effect):
+                                    continue
+                                else:
+                                    s.remove_meaning(pm)
                             else:
                                 if pm not in pms_act:
                                     s.remove_meaning(pm)

@@ -3,7 +3,8 @@ import os
 import sys
 import pkg_resources
 
-def create_config(domen = 'blocks', task_num = '1', refinement_lv = '1', benchmark = None, delim = '/', backward = 'True', task_type = 'pddl'):
+def create_config(domen = 'blocks', task_num = '1', refinement_lv = '1', benchmark = None, delim = '/',
+                  backward = 'True', task_type = 'pddl', agpath = "mapcore.planning.agent.planning_agent", agtype = "PlanningAgent"):
     """
     Create a config file for map-core algorithm
     """
@@ -38,8 +39,8 @@ def create_config(domen = 'blocks', task_num = '1', refinement_lv = '1', benchma
     config.set("Settings", "domain", domain)
     config.set("Settings", "path", path)
     config.set("Settings", "task", task_num)
-    config.set("Settings", "agpath", "mapcore.planning.agent.planning_agent")
-    config.set("Settings", "agtype", "PlanningAgent")
+    config.set("Settings", "agpath", agpath)
+    config.set("Settings", "agtype", agtype)
     config.set("Settings", "backward", backward)
     config.set("Settings", "refinement_lv", refinement_lv)
     config.set("Settings", "TaskType", task_type)

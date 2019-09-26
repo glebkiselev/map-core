@@ -1,6 +1,7 @@
 import importlib
 import logging
 import multiprocessing
+import os
 import random
 import time
 from copy import copy
@@ -25,7 +26,7 @@ class PlanningAgent(Agent):
         """
         try:
             self.name = [el[0] for el in problem.objects if el[1] == 'agent'][0]
-        except IndexError:
+        except Exception:
             self.name = 'I'
         self.problem = problem
         self.solution = []
@@ -61,6 +62,7 @@ class PlanningAgent(Agent):
         solutions, goal = search.search_plan()
         if goal:
             task.goal_situation = goal
+        file_name = None
         if solutions:
             self.solution = self.sort_plans(solutions)
             if self.backward:
@@ -70,6 +72,14 @@ class PlanningAgent(Agent):
                 logging.info('Agent ' + self.name + ' finished all works')
         else:
             logging.info('Agent' + self.name + ' couldnt find any solution for problem %s' % self.problem.name)
+        if not file_name:
+            for f in os.listdir(os.getcwd()):
+                if f.startswith('wmodel_'):
+                    if f.split(".")[0].endswith(self.name) or f.split(".")[0].endswith('agent'):
+                        file_name = f
+                        break
+        file_name = os.getcwd() +'/'+ file_name
+        return file_name
 
     def sort_plans(self, plans):
         logging.info("Agent %s choose the best solution for itself" %self.name)
