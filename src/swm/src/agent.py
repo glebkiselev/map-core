@@ -14,14 +14,14 @@ class Agent:
         """
         self.name = name
 
-    def load_swm(self):
+    def load_swm(self, path=None, type = None):
         from mapcore.swm.src.components.sign_task import load_signs
         """
         This functions is needed to load swm.
         :return: signs
         """
         logging.info('Loading start: {0}'.format(self.name))
-        signs = load_signs(self.name)
+        signs = load_signs(self.name, file_name=path, load_type=type)
         logging.info('Loading end: {0}'.format(self.name))
         if signs:
             logging.info('{0} Signs loaded'.format(len(signs)))

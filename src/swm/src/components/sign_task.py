@@ -10,8 +10,7 @@ SIT_COUNTER = 0
 SIT_PREFIX = 'situation_'
 PLAN_PREFIX = 'action_'
 
-def load_signs(agent, file_name=None, load_all=False):
-    signs = None
+def load_signs(agent, file_name=None, load_type=None):
     if not file_name:
         file_name = []
         for f in os.listdir(os.getcwd()):
@@ -21,17 +20,19 @@ def load_signs(agent, file_name=None, load_all=False):
     else:
         file_name = [file_name]
     if file_name:
-        if load_all:
-            pass
-        else:
-            newest = 0
-            file_load = ''
-            for file in file_name:
-                file_signature = int(''.join([i if i.isdigit() else '' for i in file]))
-                if file_signature > newest:
-                    newest = file_signature
-                    file_load = file
+        if load_type:
+            file_name = [name for name in file_name if load_type in name]
+        newest = 0
+        file_load = ''
+        for file in file_name:
+            file_signature = int(''.join([i if i.isdigit() else '' for i in file]))
+            if file_signature > newest:
+                newest = file_signature
+                file_load = file
+        if file_load:
             signs = pickle.load(open(file_load, 'rb'))
+        else:
+            signs = None
     else:
         logging.info('No experience file was found for agent %s' % agent)
         return None
