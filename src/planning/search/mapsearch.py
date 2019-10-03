@@ -404,7 +404,7 @@ class MapSearch():
             pms = __generator(combinations, pms, pm_signs, sm)
         return pms
 
-    def _check_activity(self, pm, next_cm, backward = False, prec_search = False):
+    def _check_activity(self, pm, next_cm, backward = False, prec_search = False, expandable = True):
         if len(pm.cause) and len(pm.effect):
             result = True
         else:
@@ -421,16 +421,16 @@ class MapSearch():
             else:
                 result = False
                 break
-
-        if not result:
-            expanded = pm.expand('meaning')
-            if not len(expanded.effect) == 0:
-                result = self._check_activity(expanded, next_cm, backward, prec_search)
-                #TODO delete False expanded
-                return result
-            else:
-                expanded.sign.remove_meaning(expanded)
-                return False, pm
+        if expandable:
+            if not result:
+                expanded = pm.expand('meaning')
+                if not len(expanded.effect) == 0:
+                    result = self._check_activity(expanded, next_cm, backward, prec_search)
+                    #TODO delete False expanded
+                    return result
+                else:
+                    expanded.sign.remove_meaning(expanded)
+                    return False, pm
         return result, pm
 
     def _meta_check_activity(self, active_pm, scripts, prev_pms):
