@@ -4,7 +4,8 @@ import sys
 import pkg_resources
 
 def create_config(domen = 'blocks', task_num = '1', refinement_lv = '1', benchmark = None, delim = '/',
-                  backward = 'True', task_type = 'pddl', agpath = "mapcore.planning.agent.planning_agent", agtype = "PlanningAgent"):
+                  backward = 'True', task_type = 'pddl',
+                  agpath = "mapcore.planning.agent.planning_agent", agtype = "PlanningAgent"):
     """
     Create a config file for map-core algorithm
     """

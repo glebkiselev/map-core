@@ -17,6 +17,7 @@ def main(args):
     argparser.add_argument(dest='problem', nargs='?')
     argparser.add_argument(dest='agpath', nargs='?')
     argparser.add_argument(dest='agtype', nargs='?')
+    argparser.add_argument(dest='backward', nargs='?')
     argparser.add_argument(dest='config_path', nargs='?')
     args = argparser.parse_args(args)
     if args.problem and args.agpath and args.agtype:
