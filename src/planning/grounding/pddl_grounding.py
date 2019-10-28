@@ -68,14 +68,17 @@ def ground(problem, agent, exp_signs=None):
     if not exp_signs:
         updated_predicates = _update_predicates(predicates, actions)
         signify_predicates(predicates, updated_predicates, signs, subtype_map, domain.constants)
-        signify_actions(actions, signs, obj_means)
+        agent_roles = {}
+        pred_names = {pred.name for pred in predicates}
+        if agent:
+            agent_role_cms = signs[agent].spread_up_activity_obj('significance', 3)
+            roles = {cm.sign for cm in agent_role_cms if cm.sign.name not in pred_names}
+            agent_roles[signs[agent]] = roles
+        signify_actions(actions, signs, obj_means, agent_roles)
 
     start_situation, pms = _define_situation('*start*', problem.initial_state, signs, 'image')
     goal_situation, pms = _define_situation('*finish*', problem.goal, signs, 'image')
 
-    if problem.name.startswith("blocks"):
-        list_signs = task_signs(problem)
-        _expand_situation_blocks(goal_situation, signs, pms, list_signs)
     return Task(problem.name, signs, start_situation, goal_situation)
 
 
@@ -218,7 +221,7 @@ def signify_predicates(predicates, updated_predicates, signs, subtype_map, const
             update_single(updated_predicates[predicate.name])
             pred_sign.add_significance()
 
-def signify_actions(actions, signs, obj_means):
+def signify_actions(actions, signs, obj_means, agent_roles):
     for action in actions:
         act_sign = Sign(action.name)
         act_signif = act_sign.add_significance()
@@ -258,23 +261,27 @@ def signify_actions(actions, signs, obj_means):
         for predicate in action.effect.addlist:
             update_significance(predicate, action.signature, True)
         signs[action.name] = act_sign
+        act_meaning = act_signif.copy('significance', 'meaning')
         I_sign = signs['I']
-        act_meaning= act_signif.copy('significance', 'meaning')
         connector = act_meaning.add_feature(obj_means[I_sign])
         efconnector = act_meaning.add_feature(obj_means[I_sign], effect=True)
         I_sign.add_out_meaning(connector)
+
+        for agent, roles in agent_roles.items():
+            I_obj_mean = agent.add_meaning()
+            mean_signs = set()
+            act_mean = act_meaning.spread_down_activity('meaning', 3)
+            for pm_list in act_mean:
+                mean_signs |= set([c.sign for c in pm_list])
+            role_signs = roles & mean_signs
+            for rs in role_signs:
+                act_meaning.replace('meaning', rs, I_obj_mean)
+
 
 
 def pred_resonate(base, sign, predicate, signs, signature):
     cms = getattr(sign, base + 's')
     roles = []
-    # for fact in predicate.signature:
-    #     sfact = [signa for signa in signature if fact[0] == signa[0]]
-    #     if sfact:
-    #         if sfact[0][1][0].name+sfact[0][0] in signs:
-    #             roles.extend(sfact)
-    #     else:
-    #         roles.append(fact)
     for fact in predicate.signature:
         if fact[1][0].name+fact[0] in signs:
             roles.append(fact)
@@ -427,7 +434,6 @@ def _define_situation(name, predicates, signs, network = 'image'):
                     getattr(fact_sign, 'add_out_' + network)(conn)
                     conn = pred_cm.add_feature(fact_image)
                     getattr(fact_sign, 'add_out_' + network)(conn)
-
     global_situation = signs['situation']
     global_cm = getattr(global_situation, 'add_'+network)()
     connector = global_cm.add_feature(sit_cm)

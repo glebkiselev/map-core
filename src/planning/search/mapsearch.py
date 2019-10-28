@@ -174,9 +174,12 @@ class MapSearch():
         for agent, cm in meanings:
             result, checked = self._check_activity(cm, active_pm.sign.meanings[1], self.backward)
             if result:
-                maxlen = max([len(el) for el in checked.spread_down_activity('meaning', A_C)])
-                if maxlen != 1:
-                    applicable_meanings.add((agent, checked))
+                for event in itertools.chain(checked.effect, checked.cause):
+                    if len(event.coincidences) > 1:
+                        break
+                else:
+                    continue
+                applicable_meanings.add((agent, checked))
         return applicable_meanings
 
     def _experience_parts(self, precedents):

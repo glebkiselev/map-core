@@ -25,7 +25,7 @@ class PlanningAgent(Agent):
         :param ref: the dynamic value of plan clarification
         """
         try:
-            self.name = [el[0] for el in problem.objects if el[1] == 'agent'][0]
+            self.name = [el for el, type in problem.objects.items() if type.name == 'agent'][0]
         except Exception:
             self.name = 'I'
         self.problem = problem
@@ -79,7 +79,7 @@ class PlanningAgent(Agent):
                         file_name = f
                         break
         file_name = os.getcwd() +'/'+ file_name
-        return file_name
+        return self.solution, file_name
 
     def sort_plans(self, plans):
         logging.info("Agent %s choose the best solution for itself" %self.name)
@@ -151,6 +151,23 @@ class PlanningAgent(Agent):
 
         return cheapest
 
+def agent_activation(agpath, agtype, problem, backward, TaskType, childpipe):
+    """
+    Function that activate an agent
+    :param agent: I
+    :return: flag that task accomplished
+    """
+    logging.basicConfig(level=logging.INFO)
+    class_ = getattr(importlib.import_module(agpath), agtype)
+    workman = class_()
+    workman.initialize(problem, TaskType, backward)
+    logging.info('Agent I start planning')
+    solution, file_name = workman.search_solution()
+    if solution:
+        logging.info('Agent I finish planning')
+        childpipe.send({workman.name:(solution, file_name)})
+
+
 class Manager:
     def __init__(self, problem, agpath = 'planning.agent.planning_agent', agtype = 'PlanningAgent', TaskType = 'pddl', backward = False):
         self.problem = problem
@@ -161,37 +178,18 @@ class Manager:
         self.TaskType = TaskType
         self.backward = backward
 
-
-    def agent_start(self, agent):
-        """
-        Function that send task to agent
-        :param agent: I
-        :return: flag that task accomplished
-        """
-        logging.basicConfig(level=logging.INFO)
-        logger = logging.getLogger("process-%r" % (agent.name))
-        logger.info('Agent {0} start planning'.format(agent.name))
-        saved = agent.search_solution()
-        if saved:
-            logger.info('Agent {0} finish planning'.format(agent.name))
-            self.finished = True
-        return agent.name +' finished'
-
     def manage_agent(self):
         """
         Create a separate process for the agent
         :return: the best solution
         """
-        class_ = getattr(importlib.import_module(self.agpath), self.agtype)
-        workman = class_()
-        workman.initialize(self.problem, self.TaskType, self.backward)
-        multiprocessing.set_start_method('spawn')
-        ag = multiprocessing.Process(target=self.agent_start, args = (workman, ))
-        ag.start()
-        ag.join()
-        if self.solution:
-            return self.solution
-        else:
-            time.sleep(1)
-
-        return None
+        try:
+            multiprocessing.set_start_method('spawn')
+        except RuntimeError:
+            pass
+        parent_conn, child_conn = multiprocessing.Pipe()
+        p = multiprocessing.Process(target=agent_activation, args = (self.agpath, self.agtype, self.problem, self.backward, self.TaskType, child_conn,))
+        p.start()
+        solution = parent_conn.recv()
+        p.join()
+        return solution
