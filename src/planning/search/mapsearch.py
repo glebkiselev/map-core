@@ -135,9 +135,9 @@ class MapSearch():
                     _isbuild = True
             elif self.check_pm is None and iteration == self.MAX_ITERATION-1:
                 _isbuild = True
-                self.goal = next_pm.sign
             if _isbuild:
                 final_plans.append(plan)
+                self.goal = next_pm.sign
                 plan_actions = [x.sign.name for _, _, x, _ in plan]
                 logging.info("len of detected plan is: {0}".format(len(plan)))
                 logging.info(plan_actions)

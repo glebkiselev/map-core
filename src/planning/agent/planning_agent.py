@@ -42,7 +42,7 @@ class PlanningAgent(Agent):
         :return: task - sign representation of the problem.
         """
         logging.info('Grounding start: {0}'.format(self.problem.name))
-        signs = self.load_swm()
+        signs = self.load_swm(type='classic')
         if self.TaskType == 'hddl':
             task = hddl_grounding.ground(self.problem, self.name, signs)
         else:
@@ -79,7 +79,7 @@ class PlanningAgent(Agent):
                         file_name = f
                         break
         file_name = os.getcwd() +'/'+ file_name
-        return self.solution, file_name
+        return (self.solution, goal), file_name
 
     def sort_plans(self, plans):
         logging.info("Agent %s choose the best solution for itself" %self.name)

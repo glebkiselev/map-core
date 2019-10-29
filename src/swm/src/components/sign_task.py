@@ -90,7 +90,7 @@ class Task:
                     sign.images = {}
                     sign.out_images = []
 
-        file_name = DEFAULT_FILE_PREFIX + datetime.datetime.now().strftime('%m_%d_%H_%M') + DEFAULT_FILE_SUFFIX
+        file_name = DEFAULT_FILE_PREFIX + datetime.datetime.now().strftime('%m_%d_%H_%M') + '_classic_'+ DEFAULT_FILE_SUFFIX
         logging.info('Start saving to {0}'.format(file_name))
         logging.info('\tDumping swm...')
         pickle.dump(self.signs, open(file_name, 'wb'))

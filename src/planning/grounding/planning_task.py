@@ -67,6 +67,7 @@ class PlanningTask(Task):
 
             plan_sit = [pm[0].sign for pm in plan]
             pl_cm_ind = [pm[0].index for pm in plan]
+
             if self.start_situation not in plan_sit:
                 plan_sit.append(self.start_situation)
             if self.goal_situation not in plan_sit:
@@ -76,13 +77,16 @@ class PlanningTask(Task):
             for name, s in self.signs.copy().items():
                 signif=list(s.significances.items())
                 if name.startswith(SIT_PREFIX):
-                    for _, pm in s.meanings.copy().items():
-                        s.remove_meaning(pm) # delete all meanings of situations
-                    if s in plan_sit: # only 1 mean and 1 image per plan sit
+                    if s in plan_sit: # save only 1 image per plan sit
                         for index, im in s.images.copy().items():
                             if index not in pl_cm_ind:
                                 s.remove_image(im)
+                        for index, pm in s.meanings.copy().items():
+                            if index != 1:
+                                s.remove_meaning(pm)  # save only 1 mean per plan sit
                     else:
+                        for _, pm in s.meanings.copy().items():
+                            s.remove_meaning(pm)  # delete all meanings of not-plan situations
                         self.signs.pop(name)
 
                 elif len(signif):
@@ -121,7 +125,7 @@ class PlanningTask(Task):
             I_obj = "_"+self.I_obj[0].name
         else:
             I_obj = 'I'
-        file_name = DEFAULT_FILE_PREFIX + datetime.datetime.now().strftime('%m_%d_%H_%M') + I_obj + DEFAULT_FILE_SUFFIX
+        file_name = DEFAULT_FILE_PREFIX + datetime.datetime.now().strftime('%m_%d_%H_%M') + '_classic_' + I_obj + DEFAULT_FILE_SUFFIX
         logging.info('Start saving to {0}'.format(file_name))
         logging.info('\tDumping swm...')
         pickle.dump(self.signs, open(file_name, 'wb'))
