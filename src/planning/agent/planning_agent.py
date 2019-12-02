@@ -25,7 +25,10 @@ class PlanningAgent(Agent):
         :param ref: the dynamic value of plan clarification
         """
         try:
-            self.name = [el for el, type in problem.objects.items() if type.name == 'agent'][0]
+            if TaskType != 'hddl':
+                self.name = [el for el, type in problem.objects.items() if type.name == 'agent'][0]
+            else:
+                self.name = [el for el, type in problem.objects if type == 'agent'][0]
         except Exception:
             self.name = 'I'
         self.problem = problem

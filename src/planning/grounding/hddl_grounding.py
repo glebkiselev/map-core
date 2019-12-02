@@ -19,6 +19,8 @@ def ground(problem, plagent, exp_signs = None):
     obj_means[They_sign] = They_sign.add_meaning()
     obj_signifs[They_sign] = They_sign.add_significance()
     signs[They_sign.name] = They_sign
+    situation = Sign('situation')
+    signs['situation'] = situation
 
     for type, stype in domain['types']:
         stype_sign = __add_sign(stype)
@@ -60,6 +62,9 @@ def ground(problem, plagent, exp_signs = None):
         connector = sit_im.add_feature(pred_im)
         pred_im.sign.add_out_image(connector)
     sit_im.copy('image', 'meaning')
+    global_cm = situation.add_image()
+    connector = global_cm.add_feature(sit_im)
+    getattr(start, 'add_out_image')(connector)
 
     #Ground htns to meanings
     goal = None
