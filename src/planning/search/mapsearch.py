@@ -175,7 +175,7 @@ class MapSearch():
             result, checked = self._check_activity(cm, active_pm.sign.meanings[1], self.backward)
             if result:
                 maxlen = max([len(el) for el in checked.spread_down_activity('meaning', A_C)])
-                if maxlen > 2:
+                if maxlen >= 2:
                     applicable_meanings.add((agent, checked))
         return applicable_meanings
 

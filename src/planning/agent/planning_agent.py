@@ -67,7 +67,10 @@ class PlanningAgent(Agent):
         search = MapSearch(task, self.TaskType, self.backward)
         solutions, goal = search.search_plan()
         if goal:
-            task.goal_situation = goal
+            if not self.backward:
+                task.goal_situation = goal
+            else:
+                task.start_situation = goal
         file_name = None
         if solutions:
             self.solution = self.sort_plans(solutions)

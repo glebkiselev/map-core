@@ -101,11 +101,20 @@ class PlanningTask(Task):
                                 if pm not in pms_act:
                                     s.remove_meaning(pm)
             global_sit = self.signs['situation']
-            for _, im in global_sit.images.copy().items():
+            for ind, im in global_sit.images.copy().items():
                 pm_signs = im.get_signs()
-                for sign in pm_signs:
-                    if sign not in plan_sit:
+                for sit in pm_signs:
+                    if sit in plan_sit:
+                        global_sit.images.pop(ind)
+                    else:
                         global_sit.remove_image(im)
+
+            for sit in plan_sit:
+                sit.out_images = []
+                global_cm = global_sit.add_image()
+                sit_im = sit.images[1]
+                connector = global_cm.add_feature(sit_im)
+                sit.add_out_image(connector)
 
             self.signs[self.start_situation.name] = self.start_situation
             self.signs[self.goal_situation.name] = self.goal_situation
@@ -139,9 +148,15 @@ class PlanningTask(Task):
         if not start.sign.meanings:
             scm = start.copy('image', 'meaning')
             start.sign.add_meaning(scm)
+            for con in start.sign.out_meanings.copy():
+                if con.in_sign.name == plan_name:
+                    start.sign.out_meanings.remove(con)
         if not finish.sign.meanings:
             fcm = finish.copy('image', 'meaning')
             finish.sign.add_meaning(fcm)
+            for con in finish.sign.out_meanings.copy():
+                if con.in_sign.name == plan_name:
+                    finish.sign.out_meanings.remove(con)
         plan_sign = Sign(plan_name + self.name)
         plan_mean = plan_sign.add_meaning()
         connector = plan_mean.add_feature(start.sign.meanings[1])
