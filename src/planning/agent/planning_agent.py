@@ -27,14 +27,17 @@ class PlanningAgent(Agent):
         try:
             if TaskType != 'hddl':
                 self.name = [el for el, type in problem.objects.items() if type.name == 'agent'][0]
+                self.backward = backward
             else:
                 self.name = [el for el, type in problem.objects if type == 'agent'][0]
+                self.backward = False
         except Exception:
             self.name = 'I'
+            self.backward = backward
         self.problem = problem
         self.solution = []
         self.final_solution = ''
-        self.backward = backward
+
         self.TaskType = TaskType
         super().initialize(self.name)
 
