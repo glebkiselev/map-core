@@ -28,7 +28,7 @@ def main(args):
             path = args.config_path
     else:
         if not args.config_path:
-            path = create_config(task_num = '5', delim=delim, task_type = 'pddl')
+            path = create_config(task_num = '3', delim=delim, task_type = 'hddl')
         else:
             path = args.config_path
 

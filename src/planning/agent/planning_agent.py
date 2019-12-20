@@ -47,14 +47,14 @@ class PlanningAgent(Agent):
         This functions is needed to load swm.
         :return: task - sign representation of the problem.
         """
-        logging.info('Grounding start: {0}'.format(self.problem.name))
+        logging.info('Начато означивание: {0}'.format(self.problem.name))
         signs = self.load_swm(type='classic')
         if self.TaskType == 'hddl':
             task = hddl_grounding.ground(self.problem, self.name, signs)
         else:
             task = pddl_grounding.ground(self.problem, self.name, signs)
-        logging.info('Grounding end: {0}'.format(self.problem.name))
-        logging.info('{0} Signs created'.format(len(task.signs)))
+        logging.info('Означивание окончено: {0}'.format(self.problem.name))
+        logging.info('{0} знаков добавлено'.format(len(task.signs)))
         return task
 
     def search_solution(self):
@@ -63,7 +63,7 @@ class PlanningAgent(Agent):
         save the experience.
         """
         task = self.get_task()
-        logging.info('Search start: {0}, Start time: {1}'.format(task.name, time.clock()))
+        logging.info('Классический поиск плана в задаче {0} начат. Время: {1}'.format(task.name, time.clock()))
         search = MapSearch(task, self.TaskType, self.backward)
         solutions, goal = search.search_plan()
         if goal:
@@ -78,20 +78,23 @@ class PlanningAgent(Agent):
                 self.solution = list(reversed(self.solution))
             file_name = task.save_signs(self.solution)
             if file_name:
-                logging.info('Agent ' + self.name + ' finished all works')
+                logging.info('Агент ' + self.name + ' закончил закочил деятельность.')
         else:
-            logging.info('Agent' + self.name + ' couldnt find any solution for problem %s' % self.problem.name)
+            logging.info('Агент' + self.name + ' не смог найти решения проблемы %s' % self.problem.name)
         if not file_name:
             for f in os.listdir(os.getcwd()):
                 if f.startswith('wmodel_'):
                     if f.split(".")[0].endswith(self.name) or f.split(".")[0].endswith('agent'):
                         file_name = f
                         break
-        file_name = os.getcwd() +'/'+ file_name
+        if file_name:
+            file_name = os.getcwd() +'/'+ file_name
+        else:
+            raise Exception("Can't find solution! Change your task.")
         return (self.solution, goal), file_name
 
     def sort_plans(self, plans):
-        logging.info("Agent %s choose the best solution for itself" %self.name)
+        logging.info("Агент %s выбрал наиболее приемлимый для него план." %self.name)
 
         minlength = min([len(pl) for pl in plans])
         plans = [plan for plan in plans if len(plan) == minlength]
@@ -170,10 +173,10 @@ def agent_activation(agpath, agtype, problem, backward, TaskType, childpipe):
     class_ = getattr(importlib.import_module(agpath), agtype)
     workman = class_()
     workman.initialize(problem, TaskType, backward)
-    logging.info('Agent I start planning')
+    logging.info('Агент начал классическое планирование')
     solution, file_name = workman.search_solution()
     if solution:
-        logging.info('Agent I finish planning')
+        #logging.info('Агент закончил классическое планирование')
         childpipe.send({workman.name:(solution, file_name)})
 
 

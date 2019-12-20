@@ -25,7 +25,7 @@ class MapPlanner():
         self.domain, self.problem = self.find_domain(self.kwgs['domain'],self.kwgs['path'], self.kwgs['task'])
         self.refinement = eval(self.kwgs['refinement_lv'])
         self.backward = eval(self.kwgs['backward'])
-        logger.info('MAP algorithm start planning...')
+        logger.info('Планировщик МАР активирован...')
 
     def search_upper(self, path, file):
         """
@@ -92,10 +92,10 @@ class MapPlanner():
         logging.info('Parsing Problem {0}'.format(self.problem))
         problem = parser.parse_problem(domain)
         logging.debug(domain)
-        logging.info('{0} Predicates parsed'.format(len(domain.predicates)))
-        logging.info('{0} Actions parsed'.format(len(domain.actions)))
-        logging.info('{0} Objects parsed'.format(len(problem.objects)))
-        logging.info('{0} Constants parsed'.format(len(domain.constants)))
+        logging.debug('{0} Predicates parsed'.format(len(domain.predicates)))
+        logging.debug('{0} Actions parsed'.format(len(domain.actions)))
+        logging.debug('{0} Objects parsed'.format(len(problem.objects)))
+        logging.debug('{0} Constants parsed'.format(len(domain.constants)))
         return problem
 
     def _parse_hddl(self):
@@ -107,13 +107,12 @@ class MapPlanner():
         """
         from mapcore.planning.parsers.hddl_parser import HTNParser
         parser = HTNParser(self.domain, self.problem)
-        logging.info('Parsing was finished...')
-        logging.info('Parsing Domain {0}'.format(self.domain))
+        logging.info('Распознавание домена {0} ...'.format(self.domain))
         domain = parser.ParseDomain(parser.domain)
-        logging.info('Parsing Problem {0}'.format(self.problem))
+        logging.info('Распознавание проблемы {0} ...'.format(self.problem))
         problem = parser.ParseProblem(parser.problem, domain)
-        logging.info('{0} Predicates parsed'.format(len(domain['predicates'])))
-        logging.info('{0} Actions parsed'.format(len(domain['actions'])))
+        logging.debug('{0} Predicates parsed'.format(len(domain['predicates'])))
+        logging.debug('{0} Actions parsed'.format(len(domain['actions'])))
         return problem
 
 
@@ -126,7 +125,7 @@ class MapPlanner():
             problem = self._parse_hddl()
         else:
             problem = self._parse_pddl()
-        logger.info('Parsing was finished...')
+        logger.info('Классическая задача получена и распознана.')
         manager = Manager(problem, self.agpath, TaskType=self.TaskType, backward=self.backward)
         solution = manager.manage_agent()
         return solution

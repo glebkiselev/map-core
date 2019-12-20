@@ -20,11 +20,11 @@ class Agent:
         This functions is needed to load swm.
         :return: signs
         """
-        logging.info('Loading start: {0}'.format(self.name))
+        logging.info('Означивание начато: {0}'.format(self.name))
         signs = load_signs(self.name, file_name=path, load_type=type)
-        logging.info('Loading end: {0}'.format(self.name))
+        logging.info('Означивание окончено: {0}'.format(self.name))
         if signs:
-            logging.info('{0} Signs loaded'.format(len(signs)))
+            logging.info('{0} знаков создано'.format(len(signs)))
         return signs
 
     def update_swm(self, signs):
@@ -43,10 +43,10 @@ class Manager:
         """
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger("process-%r" % (agent.name))
-        logger.info('Agent {0} start'.format(agent.name))
+        #logger.info('Агент {0} начал означивание'.format(agent.name))
         saved = agent.update_swm()
         if saved:
-            logger.info('Agent {0} finish'.format(agent.name))
+            logger.info('Агент {0} окончил означивание.'.format(agent.name))
         return agent.name +' finished'
 
     def manage_agent(self):

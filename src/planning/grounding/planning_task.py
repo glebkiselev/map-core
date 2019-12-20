@@ -34,7 +34,7 @@ class PlanningTask(Task):
         return '<Task {0}, signs: {1}>'.format(self.name, len(self.signs))
 
     def save_classic(self, plan):
-        logging.info('\tSaving precedent classically...')
+        logging.info('\tСохраняю классический прецедент...')
         plan_sign, _, _ = self.save_plan(self.signs[self.start_situation.name].images[1], self.signs[self.goal_situation.name].images[1], plan, '')
         # Add connection to goal situation
         goal_signif = self.goal_situation.add_significance()
@@ -58,9 +58,9 @@ class PlanningTask(Task):
                 return False
             return True
 
-        logging.info('Plan preparation to save...')
+        logging.info('Начинаю подготовку к сохранению плана...')
         if plan:
-            logging.info('\tCleaning swm...')
+            logging.debug('\tCleaning swm...')
 
             self.start_situation.name += self.name
             self.goal_situation.name += self.name
@@ -135,10 +135,10 @@ class PlanningTask(Task):
         else:
             I_obj = 'I'
         file_name = DEFAULT_FILE_PREFIX + datetime.datetime.now().strftime('%m_%d_%H_%M') + '_classic_' + I_obj + DEFAULT_FILE_SUFFIX
-        logging.info('Start saving to {0}'.format(file_name))
-        logging.info('\tDumping swm...')
+        logging.info('Файл классического опыта: {0}'.format(file_name))
+        logging.debug('\tDumping swm...')
         pickle.dump(self.signs, open(file_name, 'wb'))
-        logging.info('\tDumping swm finished')
+        logging.info('\tСохранение выполнено.')
         return file_name
 
     def save_plan(self, start, finish, actions, plan_name):

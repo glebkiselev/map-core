@@ -35,7 +35,7 @@ class MapSearch():
             self.active_pm = task.start_situation.images[1]
             self.check_pm = task.goal_situation
         else:
-            logging.info("Cant find the goal situation in task %s" % task.name)
+            logging.debug("Cant find the goal situation in task %s" % task.name)
         self.precedents = set()
 
     def search_plan(self):
@@ -107,7 +107,7 @@ class MapSearch():
         logging.debug('\tFound {0} variants'.format(len(candidates)))
         final_plans = []
 
-        logging.info("len of curent plan is: {0}. Len of candidates: {1}".format(len(current_plan), len(candidates)))
+        logging.info("Текущая длина найденного плана: {0}. Количество возможных действий: {1}".format(len(current_plan), len(candidates)))
 
         for counter, name, script, ag_mask in candidates:
             logging.debug('\tChoose {0}: {1} -> {2}'.format(counter, name, script))
@@ -126,7 +126,7 @@ class MapSearch():
             else:
                 plan.extend(subplan)
                 logging.info(
-                    'action {0} was changed to {1}'.format(script.sign.name, [part[1] for part in subplan]))
+                    'Сложное действие {0} уточнено. Найденные поддействия: {1}'.format(script.sign.name, [part[1] for part in subplan]))
                 prev_state.append(active_pm)
 
             _isbuild = False
@@ -139,7 +139,7 @@ class MapSearch():
                 final_plans.append(plan)
                 self.goal = next_pm.sign
                 plan_actions = [x.sign.name for _, _, x, _ in plan]
-                logging.info("len of detected plan is: {0}".format(len(plan)))
+                logging.info("Цель достигнута. Длина найденного плана: {0}".format(len(plan)))
                 logging.info(plan_actions)
             else:
                 recursive_plans = self._map_iteration(next_pm, iteration + 1, plan, prev_state)
@@ -172,7 +172,11 @@ class MapSearch():
     def applicable_search(self, meanings, active_pm):
         applicable_meanings = set()
         for agent, cm in meanings:
-            result, checked = self._check_activity(cm, active_pm.sign.meanings[1], self.backward)
+            if (agent, cm) in self.precedents:
+                expandable = True
+            else:
+                expandable = False
+            result, checked = self._check_activity(cm, active_pm.sign.meanings[1], self.backward, expandable=expandable)
             if result:
                 maxlen = max([len(el) for el in checked.spread_down_activity('meaning', A_C)])
                 if maxlen >= 2:
@@ -237,7 +241,7 @@ class MapSearch():
                 applicable.append((agent, checked))
 
         if not applicable:
-            logging.info('No applicable actions was found')
+            logging.info('Не найдено допустимых действий')
             return None
 
         for action in applicable:
@@ -246,7 +250,7 @@ class MapSearch():
             if included_sit:
                 plan.append(
                     (active_pm, action[1].sign.name, action[1], action[0]))
-                logging.info('Experience action %s added to plan' % action[1].sign.name)
+                logging.info('Действие %s из опыта добавлено в план' % action[1].sign.name)
             else:
                 continue
             if next_pm.includes('image', check_pm):

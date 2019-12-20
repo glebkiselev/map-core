@@ -34,7 +34,7 @@ def load_signs(agent, file_name=None, load_type=None):
         else:
             signs = None
     else:
-        logging.info('No experience file was found for agent %s' % agent)
+        logging.debug('No experience file was found for agent %s' % agent)
         return None
     return signs
 
@@ -91,8 +91,8 @@ class Task:
                     sign.out_images = []
 
         file_name = DEFAULT_FILE_PREFIX + datetime.datetime.now().strftime('%m_%d_%H_%M') + '_classic_'+ DEFAULT_FILE_SUFFIX
-        logging.info('Start saving to {0}'.format(file_name))
-        logging.info('\tDumping swm...')
+        logging.debug('Start saving to {0}'.format(file_name))
+        logging.debug('\tDumping swm...')
         pickle.dump(self.signs, open(file_name, 'wb'))
-        logging.info('\tDumping swm finished')
+        logging.debug('\tDumping swm finished')
         return file_name
