@@ -30,6 +30,7 @@ class MapSearch():
                 self.check_pm = task.goal_situation.images[1]
                 self.active_pm = task.start_situation.images[1]
         elif task.subtasks and TaskType == 'hddl':
+            # TODO remake in procedure of plan search for each subtask
             self.scenario = task.subtasks[0].meanings[1].spread_down_htn_activity_act('meaning', A_C)
             self.MAX_ITERATION = len(self.scenario)
             self.active_pm = task.start_situation.images[1]

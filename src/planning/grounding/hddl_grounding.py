@@ -75,7 +75,7 @@ def ground(problem, plagent, exp_signs = None):
         htn_mean = htn_sign.add_meaning()
         for task in htn.ordering:
             subtask = htn.subtasks[task]
-            cm = __ground_htn_subtask(subtask[0], subtask[1], domain)
+            cm = __ground_htn_subtask(subtask[0], subtask[1], problem)
             connector = htn_mean.add_feature(cm)
             cm.sign.add_out_meaning(connector)
         subtasks.append(htn_sign)
@@ -312,10 +312,11 @@ def __ground_method(parameters, subtasks, ordering, task, problem, depth):
 
 
 def __ground_htn_subtask(name, args, problem):
-    methods  = [method for method in problem['methods'] if method.task == name]
+    methods  = [method for method in problem.domain['methods'] if method.task == name]
     change = {}
     fin_meth = None
     tparams = []
+
     for method in methods:
         for e1 in method.task_parameters:
             for e2 in method.parameters:
@@ -325,13 +326,30 @@ def __ground_htn_subtask(name, args, problem):
         if len(args) == len(tparams):
             cms = [signs[arg].meanings[1] for arg in args]
             for param in tparams:
-                change[signs[param[1]+param[0]]] = cms[tparams.index(param)]
+                change[param[1]+param[0]] = cms[tparams.index(param)]
             fin_meth = method
             break
         else:
             tparams = []
             change = {}
-    chparams = [el[0] for el in tparams]
+
+    #TODO rework for tasks with more than 2 task_roles
+    block_room = None
+    room_roles = {}
+    roles = {}
+    for arg in args:
+        for obj in problem.objects:
+            if obj[0] == arg:
+                roles[arg] = obj[1]
+                break
+    block_name = [name for name in args if roles[args[0]] in name][0]
+    for pred in problem.init:
+        if pred.signature[0] == block_name:
+            if roles[args[1]] in pred.signature[1]:
+                block_room = pred.signature[1]
+                room_roles = {role.sign.name for role in signs[block_room].spread_up_activity_obj('significance', 2)}
+                break
+
     fin_meth_mean = signs[fin_meth.task].add_meaning()
     acts = []
 
@@ -343,14 +361,27 @@ def __ground_htn_subtask(name, args, problem):
             acts.append(cm)
     htn_methods = {}
     for stask, parameters in fin_meth.subtasks.items():
-        bothel = [el for el in parameters[1] if el in chparams]
-        if not bothel:
-            act = acts[fin_meth.ordering.index(stask)]
-            htn_method = act.copy('significance', 'meaning')
-        else:
-            act = acts[fin_meth.ordering.index(stask)]
-            htn_method = act.copy('significance', 'meaning')
-        for sign, cm in change.items():
+        act = acts[fin_meth.ordering.index(stask)]
+        htn_method = act.copy('significance', 'meaning')
+        for sign_name, cm in change.items():
+            for el in parameters[1]:
+                if sign_name.endswith(el):
+                    pm = cm.copy('meaning', 'meaning')
+                    sign = signs[sign_name]
+                    htn_method.replace('meaning', sign, pm)
+        meth_change = {}
+        flag = False
+        for el1 in parameters[1]:
+            for el2 in fin_meth.parameters:
+                if el1 == el2[0]:
+                    role_name = el2[1]+el2[0]
+                    if role_name in room_roles and not role_name in change:
+                        meth_change[signs[role_name]] = signs[block_room].meanings[1]
+                        flag = True
+                        break
+            if flag:
+                break
+        for sign, cm in meth_change.items():
             pm = cm.copy('meaning', 'meaning')
             htn_method.replace('meaning', sign, pm)
         htn_methods[stask] = htn_method
