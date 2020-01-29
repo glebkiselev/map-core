@@ -64,8 +64,21 @@ class PlanningAgent(Agent):
         """
         task = self.get_task()
         logging.info('Классический поиск плана в задаче {0} начат. Время: {1}'.format(task.name, time.clock()))
-        search = MapSearch(task, self.TaskType, self.backward)
-        solutions, goal = search.search_plan()
+        solutions = []
+        goal = None
+        if self.TaskType == 'hddl':
+            task = self.expand_task_blocks(task)
+            htn = task.subtasks[0]
+            for subtask in task.scenario:
+                for action in subtask[1]:
+                    task.actions = [action[0]]
+                    task.subtasks = action[1]
+                    search = MapSearch(task, self.TaskType, self.backward)
+                    solutions, goal = search.search_plan()
+                    print()
+        else:
+            search = MapSearch(task, self.TaskType, self.backward)
+            solutions, goal = search.search_plan()
         if goal:
             if not self.backward:
                 task.goal_situation = goal
@@ -162,6 +175,50 @@ class PlanningAgent(Agent):
             cheapest.extend(random.choice(alternative))
 
         return cheapest
+
+    def expand_task_blocks(self, task):
+        """
+        Expand standart HTN mastrix to list of subtasks
+        :param task:
+        :return:
+        """
+        def spread_down_activity_act(cm, base, depth):
+            active_pms = []
+            if depth > 0:
+                for event in cm.cause:
+                    for connector in event.coincidences:
+                        out_cm = connector.get_out_cm(base)
+                        if out_cm.is_causal():
+                            active_pms.append(connector.get_out_cm(base))
+                        else:
+                            pms = spread_down_activity_act(out_cm, base, depth - 1)
+                            active_pms.extend(pms)
+            return active_pms
+        htn = task.subtasks[0]
+        subtasks = []
+        subt_scenario = []
+        for event in htn.meanings[1].cause:
+            for connector in event.coincidences:
+                cm = connector.out_sign.meanings[connector.out_index]
+                subtasks.append(cm)
+                logging.info('Для HTN задачи была найдена подцель %s' % cm.sign.name)
+        for subtask in subtasks:
+            actions = spread_down_activity_act(subtask, 'meaning', 3)
+            task_scenario = []
+            for act in actions:
+                replaced = {}
+                chains = act.spread_down_activity('meaning', 5)
+                for chain in chains:
+                    role_or_obj = chain[-1].sign
+                    is_role = [cm for _, cm in role_or_obj.significances.items() if not cm.is_empty()]
+                    if not is_role:
+                        replaced.setdefault(chain[1].sign.name, set()).add(role_or_obj.name)
+                        if (act.sign, replaced) not in task_scenario:
+                            task_scenario.append((act.sign, replaced))
+            subt_scenario.append((subtask, task_scenario))
+        task.scenario = subt_scenario
+        return task
+
 
 def agent_activation(agpath, agtype, problem, backward, TaskType, childpipe):
     """

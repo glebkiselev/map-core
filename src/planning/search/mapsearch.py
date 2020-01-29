@@ -2,7 +2,7 @@ import logging
 
 from mapcore.swm.src.components import sign_task as st
 from mapcore.swm.src.components.semnet import Sign
-from copy import copy
+from copy import copy, deepcopy
 import itertools
 
 '''
@@ -20,9 +20,10 @@ class MapSearch():
         self.backward = backward
         self.TaskType = TaskType
         self.scenario = None
+        self.actions = []
         self.goal = None
+        self.MAX_ITERATION = 30
         if TaskType == 'pddl':
-            self.MAX_ITERATION = 30
             if self.backward:
                 self.check_pm = task.start_situation.images[1]
                 self.active_pm = task.goal_situation.images[1]
@@ -30,9 +31,9 @@ class MapSearch():
                 self.check_pm = task.goal_situation.images[1]
                 self.active_pm = task.start_situation.images[1]
         elif task.subtasks and TaskType == 'hddl':
-            # TODO remake in procedure of plan search for each subtask
-            self.scenario = task.subtasks[0].meanings[1].spread_down_htn_activity_act('meaning', A_C)
-            self.MAX_ITERATION = len(self.scenario)
+            self.scenario = task.subtasks
+            self.actions = task.actions
+            #self.scenario = task.subtasks[0].meanings[1].spread_down_htn_activity_act('meaning', A_C)
             self.active_pm = task.start_situation.images[1]
             self.check_pm = task.goal_situation
         else:
@@ -60,9 +61,9 @@ class MapSearch():
 
         precedents = self._precedent_search(active_pm)
 
-        act_matrice = None
-        if self.scenario:
-            act_matrice = self.scenario[iteration]
+        appl_actions = None
+        if self.TaskType == 'hddl':
+            appl_actions = self.actions
 
         active_chains = active_pm.spread_down_activity('image', A_C)
         active_signifs = dict()
@@ -74,10 +75,8 @@ class MapSearch():
                 if signif.sign not in active_signifs:
                     active_signifs.setdefault(signif.sign, set()).update({el for el in active_signif if el.sign.name == signif.sign.name})
 
-        if act_matrice:
-            active_signifs = {key:value for key, value in active_signifs.items() if key == act_matrice.sign}
-
-        self._experience_parts(precedents)
+        if appl_actions:
+            active_signifs = {key:value for key, value in active_signifs.items() if key in appl_actions}
 
         meanings = []
         for pm_signif, ams in active_signifs.items():
@@ -90,7 +89,7 @@ class MapSearch():
                     if chain[-1].sign == achain[-1].sign and len(chain) > 2 and chain not in merged_chains:
                         merged_chains.append(chain)
                         break
-            scripts = self._generate_meanings(merged_chains, act_matrice)
+            scripts = self._generate_meanings(merged_chains)
             logging.debug("Generated {0} scripts for {1} action on step {2}".format(str(len(scripts)), pm_signif.name, str(iteration)))
             meanings.extend(scripts)
 
@@ -99,7 +98,8 @@ class MapSearch():
         if self.check_pm:
             candidates = self._meta_check_activity(active_pm, applicable_meanings, [x for x, _, _, _ in current_plan])
         else:
-            candidates = [(0, script.sign.name, script, agent) for agent, script in applicable_meanings]
+            candidates = self._meta_check_htn(active_pm, applicable_meanings)
+            #candidates = [(0, script.sign.name, script, agent) for agent, script in applicable_meanings]
 
         if not candidates:
             logging.debug('\tNot found applicable scripts ({0})'.format([x for _, x, _, _ in current_plan]))
@@ -183,13 +183,6 @@ class MapSearch():
                 if maxlen >= 2:
                     applicable_meanings.add((agent, checked))
         return applicable_meanings
-
-    def _experience_parts(self, precedents):
-        if precedents:
-            if not self.exp_sits:
-                self.exp_sits = self.world_model['situation'].spread_down_activity_obj('image', 1)
-            if not self.exp_acts:
-                self.exp_acts = self.hierarch_acts()
 
     def hierarch_acts(self):
         """
@@ -327,85 +320,128 @@ class MapSearch():
         rkeys = {el for el in replace_map.keys()}
         pms = []
 
-        if not sm:
-            # Remove expanded actions. Add fully signed actions to pms list
-            for agent, lpm in mapped_actions.items():
-                for pm in lpm.copy():
-                    if len(pm.cause) + len(pm.effect) != main_pm_len:
-                        lpm.remove(pm)
-                        continue
-                    pm_signs = set()
-                    pm_mean = pm.spread_down_activity('meaning', A_C)
-                    for pm_list in pm_mean:
-                        pm_signs |= set([c.sign for c in pm_list])
-                    role_signs = rkeys & pm_signs
-                    if not role_signs:
-                        lpm.remove(pm)
-                        if not pms:
-                            pms.append((agent, pm))
-                        else:
-                            for _, pmd in copy(pms):
-                                if pmd.resonate('meaning', pm):
-                                    break
-                            else:
-                                pms.append((agent, pm))
-                old_pms = []
-                # Generate new meanings to not fully signed actions
-                for pm in lpm:
-                    if len(pm.cause) + len(pm.effect) != main_pm_len:
-                        continue
-                    pm_signs = set()
-                    pm_mean = pm.spread_down_activity('meaning', A_C)
-                    for pm_list in pm_mean:
-                        pm_signs |= set([c.sign for c in pm_list])
-                    if pm_signs not in old_pms:
-                        old_pms.append(pm_signs)
+        # if not sm:
+        #     # Remove expanded actions. Add fully signed actions to pms list
+        #     for agent, lpm in mapped_actions.items():
+        #         for pm in lpm.copy():
+        #             if len(pm.cause) + len(pm.effect) != main_pm_len:
+        #                 lpm.remove(pm)
+        #                 continue
+        #             pm_signs = set()
+        #             pm_mean = pm.spread_down_activity('meaning', A_C)
+        #             for pm_list in pm_mean:
+        #                 pm_signs |= set([c.sign for c in pm_list])
+        #             role_signs = rkeys & pm_signs
+        #             if not role_signs:
+        #                 lpm.remove(pm)
+        #                 if not pms:
+        #                     pms.append((agent, pm))
+        #                 else:
+        #                     for _, pmd in copy(pms):
+        #                         if pmd.resonate('meaning', pm):
+        #                             break
+        #                     else:
+        #                         pms.append((agent, pm))
+        #         old_pms = []
+        #         # Generate new meanings to not fully signed actions
+        #         for pm in lpm:
+        #             if len(pm.cause) + len(pm.effect) != main_pm_len:
+        #                 continue
+        #             pm_signs = set()
+        #             pm_mean = pm.spread_down_activity('meaning', A_C)
+        #             for pm_list in pm_mean:
+        #                 pm_signs |= set([c.sign for c in pm_list])
+        #             if pm_signs not in old_pms:
+        #                 old_pms.append(pm_signs)
+        #             else:
+        #                 continue
+        #             role_signs = rkeys & pm_signs
+        #             for role_sign in role_signs:
+        #                 new_map[role_sign] = replace_map[role_sign]
+        #
+        #             combinations = mix_pairs(new_map)
+        #             pms = __generator(combinations, pms, pm_signs, pm)
+        #             if len(old_pms) == 64:
+        #                 break
+        # else:
+        #     I_sign = self.world_model['I']
+        #     I_obj = I_sign.out_significances[0].in_sign
+        #     agent_roles = I_obj.get_role()
+        #     I_mean = I_sign.add_meaning()
+        #     connector = sm.add_feature(I_mean)
+        #     efconnector = sm.add_feature(I_mean, effect=True)
+        #     I_sign.add_out_meaning(connector)
+        #     roles = set()
+        #
+        #     for chain in sm.spread_down_activity('meaning', A_C):
+        #         if chain[-1].sign in agent_roles:
+        #             roles.add(chain[-2].sign)
+        #     for elem in roles:
+        #         sm.replace('meaning', elem, I_mean)
+        #     changed_roles = set()
+        #     pm_chains = sm.spread_down_activity('meaning', A_C)
+        #     for chain in pm_chains:
+        #         for achain in chains:
+        #             if chain[-1].sign == achain[-1].sign and len(chain) > 2:
+        #                 changed_roles.add((achain[-3].sign, chain[-1]))
+        #
+        #     new_map = {}
+        #     for elem in changed_roles:
+        #         if elem[1].sign != I_sign:
+        #             new_map[elem[0]] = {el for el in replace_map[elem[0]] if el != elem[1]}
+        #     for key, value in replace_map.items():
+        #         if key not in new_map:
+        #             new_map[key] = value
+        #
+        #     pm_signs = set()
+        #     for pm_list in pm_chains:
+        #         pm_signs |= set([c.sign for c in pm_list])
+        #
+        #     combinations = mix_pairs(new_map, True)
+        #     pms = __generator(combinations, pms, pm_signs, sm)
+
+        # Remove expanded actions. Add fully signed actions to pms list
+        for agent, lpm in mapped_actions.items():
+            for pm in lpm.copy():
+                if len(pm.cause) + len(pm.effect) != main_pm_len:
+                    lpm.remove(pm)
+                    continue
+                pm_signs = set()
+                pm_mean = pm.spread_down_activity('meaning', A_C)
+                for pm_list in pm_mean:
+                    pm_signs |= set([c.sign for c in pm_list])
+                role_signs = rkeys & pm_signs
+                if not role_signs:
+                    lpm.remove(pm)
+                    if not pms:
+                        pms.append((agent, pm))
                     else:
-                        continue
-                    role_signs = rkeys & pm_signs
-                    for role_sign in role_signs:
-                        new_map[role_sign] = replace_map[role_sign]
+                        for _, pmd in copy(pms):
+                            if pmd.resonate('meaning', pm):
+                                break
+                        else:
+                            pms.append((agent, pm))
+            old_pms = []
+            # Generate new meanings to not fully signed actions
+            for pm in lpm:
+                if len(pm.cause) + len(pm.effect) != main_pm_len:
+                    continue
+                pm_signs = set()
+                pm_mean = pm.spread_down_activity('meaning', A_C)
+                for pm_list in pm_mean:
+                    pm_signs |= set([c.sign for c in pm_list])
+                if pm_signs not in old_pms:
+                    old_pms.append(pm_signs)
+                else:
+                    continue
+                role_signs = rkeys & pm_signs
+                for role_sign in role_signs:
+                    new_map[role_sign] = replace_map[role_sign]
 
-                    combinations = mix_pairs(new_map)
-                    pms = __generator(combinations, pms, pm_signs, pm)
-                    if len(old_pms) == 64:
-                        break
-        else:
-            I_sign = self.world_model['I']
-            I_obj = I_sign.out_significances[0].in_sign
-            agent_roles = I_obj.get_role()
-            I_mean = I_sign.add_meaning()
-            connector = sm.add_feature(I_mean)
-            efconnector = sm.add_feature(I_mean, effect=True)
-            I_sign.add_out_meaning(connector)
-            roles = set()
-
-            for chain in sm.spread_down_activity('meaning', A_C):
-                if chain[-1].sign in agent_roles:
-                    roles.add(chain[-2].sign)
-            for elem in roles:
-                sm.replace('meaning', elem, I_mean)
-            changed_roles = set()
-            pm_chains = sm.spread_down_activity('meaning', A_C)
-            for chain in pm_chains:
-                for achain in chains:
-                    if chain[-1].sign == achain[-1].sign and len(chain) > 2:
-                        changed_roles.add((achain[-3].sign, chain[-1]))
-
-            new_map = {}
-            for elem in changed_roles:
-                if elem[1].sign != I_sign:
-                    new_map[elem[0]] = {el for el in replace_map[elem[0]] if el != elem[1]}
-            for key, value in replace_map.items():
-                if key not in new_map:
-                    new_map[key] = value
-
-            pm_signs = set()
-            for pm_list in pm_chains:
-                pm_signs |= set([c.sign for c in pm_list])
-
-            combinations = mix_pairs(new_map, True)
-            pms = __generator(combinations, pms, pm_signs, sm)
+                combinations = mix_pairs(new_map)
+                pms = __generator(combinations, pms, pm_signs, pm)
+                if len(old_pms) == 64:
+                    break
         return pms
 
     def _check_activity(self, pm, next_cm, backward = False, prec_search = False, expandable = True):
@@ -525,6 +561,36 @@ class MapSearch():
         connector = global_cm.add_feature(pm)
         next_situation.add_out_image(connector)
         return pm
+
+    def _meta_check_htn(self, active_pm, applicable_meanings):
+        heuristics = []
+        agent_preds = {con.in_sign.name for con in self.I_sign.out_images}
+        for ag, script in applicable_meanings:
+            heur_value = 0
+            next_pm = self._time_shift_forward(active_pm.sign.meanings[1], script, backward=self.backward)
+            # find cur state - room and hallways from cur room
+            chains = next_pm.spread_down_activity('image', 5)
+            agent_state = set()
+            for chain in chains:
+                if chain[-1].sign == ag:
+                    agent_state |= {s.name for s in chain[1].get_signs() if s != ag}
+            for chain in chains:
+                pred_name = chain[1].sign.name
+                if pred_name in self.scenario and pred_name not in agent_preds:
+                    pred_signs = {s.name for s in chain[1].get_signs()}
+                    scen_pred = deepcopy(self.scenario[pred_name])
+                    scen_pred |= agent_state
+                    if pred_signs == scen_pred:
+                        heur_value+=1
+                elif pred_name in self.scenario and pred_name in agent_preds:
+                    pred_signs = {s.name for s in chain[1].get_signs()}
+                    scen_pred = deepcopy(self.scenario[pred_name])
+                    scen_pred.add(ag.name)
+                    if pred_signs == scen_pred:
+                        heur_value+=1
+            heuristics.append((heur_value, script.sign.name, script, ag))
+        best_heuristics = max([el[0] for el in heuristics])
+        return list(filter(lambda x: x[0] == best_heuristics, heuristics))
 
 
 def mix_pairs(replace_map, repeat = False):
