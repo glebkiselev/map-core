@@ -57,6 +57,22 @@ class PlanningAgent(Agent):
         logging.info('{0} знаков добавлено'.format(len(task.signs)))
         return task
 
+    def is_actual(self, task, action, agent_predicates):
+        chains = task.start_situation.images[1].spread_down_activity('image', 5)
+        used = set()
+        for chain in chains:
+            if chain[-1].sign.name == 'I':
+                ag_pred = chain[1].sign.name
+                if ag_pred in action[1]:
+                    cm_signs_names = {s.name for s in chain[1].get_signs() if s.name != 'I'}
+                    for name, value in action[1].items():
+                        if name == ag_pred and len(value) == 1:
+                            if cm_signs_names == value:
+                                used.add(ag_pred)
+                                if used == agent_predicates:
+                                    return False
+        return True
+
     def search_solution(self):
         """
         This function is needed to synthesize all plans, choose the best one and
@@ -68,14 +84,25 @@ class PlanningAgent(Agent):
         goal = None
         if self.TaskType == 'hddl':
             task = self.expand_task_blocks(task)
-            htn = task.subtasks[0]
+            #htn = task.subtasks[0]
+            start = task.start_situation
             for subtask in task.scenario:
+                subt_solutions= []
                 for action in subtask[1]:
-                    task.actions = [action[0]]
-                    task.subtasks = action[1]
-                    search = MapSearch(task, self.TaskType, self.backward)
-                    solutions, goal = search.search_plan()
-                    print()
+                    agent_predicates = {cm.sign.name for cm in task.signs['I'].spread_up_activity_obj('significance', 4)
+                                        if cm.sign.name in action[1]}
+                    if self.is_actual(task, action, agent_predicates):
+                        task.actions = [action[0]]
+                        task.subtasks = {name:value for name, value in action[1].items() if name in agent_predicates}
+                        search = MapSearch(task, self.TaskType, self.backward)
+                        solution, goal = search.search_plan()
+                        task.start_situation = goal
+                        subt_solutions.extend(solution[0])
+                sol_repr = ', '.join([act[1] for act in subt_solutions])
+                logging.info('При решении подзадачи {0} был синтезирован план: {1}'.format(subtask[0].sign.name, sol_repr))
+                solutions.extend(subt_solutions)
+            solutions = [solutions]
+            task.start_situation = start
         else:
             search = MapSearch(task, self.TaskType, self.backward)
             solutions, goal = search.search_plan()
@@ -207,12 +234,17 @@ class PlanningAgent(Agent):
             task_scenario = []
             for act in actions:
                 replaced = {}
-                chains = act.spread_down_activity('meaning', 5)
+                #take only effects of action, because we need only last situation to check.
+                chains = []
+                for event in act.effect:
+                    for connector in event.coincidences:
+                        out_cm = connector.get_out_cm('meaning')
+                        chains.extend(out_cm.spread_down_activity('meaning', 4))
                 for chain in chains:
                     role_or_obj = chain[-1].sign
                     is_role = [cm for _, cm in role_or_obj.significances.items() if not cm.is_empty()]
                     if not is_role:
-                        replaced.setdefault(chain[1].sign.name, set()).add(role_or_obj.name)
+                        replaced.setdefault(chain[0].sign.name, set()).add(role_or_obj.name)
                         if (act.sign, replaced) not in task_scenario:
                             task_scenario.append((act.sign, replaced))
             subt_scenario.append((subtask, task_scenario))

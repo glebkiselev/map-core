@@ -98,7 +98,7 @@ class MapSearch():
         if self.check_pm:
             candidates = self._meta_check_activity(active_pm, applicable_meanings, [x for x, _, _, _ in current_plan])
         else:
-            candidates = self._meta_check_htn(active_pm, applicable_meanings)
+            candidates = self._meta_check_htn(active_pm, applicable_meanings, [x for x, _, _, _ in current_plan])
             #candidates = [(0, script.sign.name, script, agent) for agent, script in applicable_meanings]
 
         if not candidates:
@@ -134,7 +134,7 @@ class MapSearch():
             if self.check_pm:
                 if next_pm.includes('image', self.check_pm):
                     _isbuild = True
-            elif self.check_pm is None and iteration == self.MAX_ITERATION-1:
+            elif counter == len(self.scenario):
                 _isbuild = True
             if _isbuild:
                 final_plans.append(plan)
@@ -562,33 +562,27 @@ class MapSearch():
         next_situation.add_out_image(connector)
         return pm
 
-    def _meta_check_htn(self, active_pm, applicable_meanings):
+    def _meta_check_htn(self, active_pm, applicable_meanings, prev_pms):
         heuristics = []
-        agent_preds = {con.in_sign.name for con in self.I_sign.out_images}
+        # agent_preds = {con.in_sign.name for con in self.I_sign.out_images}
         for ag, script in applicable_meanings:
-            heur_value = 0
-            next_pm = self._time_shift_forward(active_pm.sign.meanings[1], script, backward=self.backward)
-            # find cur state - room and hallways from cur room
-            chains = next_pm.spread_down_activity('image', 5)
-            agent_state = set()
-            for chain in chains:
-                if chain[-1].sign == ag:
-                    agent_state |= {s.name for s in chain[1].get_signs() if s != ag}
-            for chain in chains:
-                pred_name = chain[1].sign.name
-                if pred_name in self.scenario and pred_name not in agent_preds:
-                    pred_signs = {s.name for s in chain[1].get_signs()}
-                    scen_pred = deepcopy(self.scenario[pred_name])
-                    scen_pred |= agent_state
-                    if pred_signs == scen_pred:
-                        heur_value+=1
-                elif pred_name in self.scenario and pred_name in agent_preds:
-                    pred_signs = {s.name for s in chain[1].get_signs()}
-                    scen_pred = deepcopy(self.scenario[pred_name])
-                    scen_pred.add(ag.name)
-                    if pred_signs == scen_pred:
-                        heur_value+=1
-            heuristics.append((heur_value, script.sign.name, script, ag))
+            estimation = self._time_shift_forward(active_pm.sign.meanings[1], script, backward=self.backward)
+            for prev in prev_pms:
+                if estimation.resonate('image', prev, False, False):
+                    break
+            else:
+                heur_value = 0
+                used = set()
+                chains = estimation.spread_down_activity('image', 5)
+                for chain in chains:
+                    pred = chain[1]
+                    if pred.sign.name in self.scenario:
+                        ch_signs_names = {s.name for s in pred.get_signs() if s != ag}
+                        if self.scenario[pred.sign.name] == ch_signs_names:
+                            if pred.sign.name not in used:
+                                heur_value+=1
+                                used.add(pred.sign.name)
+                heuristics.append((heur_value, script.sign.name, script, ag))
         best_heuristics = max([el[0] for el in heuristics])
         return list(filter(lambda x: x[0] == best_heuristics, heuristics))
 
