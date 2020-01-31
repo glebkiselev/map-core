@@ -84,7 +84,7 @@ class PlanningAgent(Agent):
         goal = None
         if self.TaskType == 'hddl':
             task = self.expand_task_blocks(task)
-            #htn = task.subtasks[0]
+            htn = task.subtasks[0]
             start = task.start_situation
             for subtask in task.scenario:
                 subt_solutions= []
@@ -101,6 +101,7 @@ class PlanningAgent(Agent):
                 sol_repr = ', '.join([act[1] for act in subt_solutions])
                 logging.info('При решении подзадачи {0} был синтезирован план: {1}'.format(subtask[0].sign.name, sol_repr))
                 solutions.extend(subt_solutions)
+            logging.info('При решении задачи {0} был синтезирован план: {1}'.format(htn.name, ', '.join([act[1] for act in solutions])))
             solutions = [solutions]
             task.start_situation = start
         else:

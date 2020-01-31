@@ -51,6 +51,8 @@ class MapSearch():
         plans = self._map_iteration(self.active_pm, iteration=0, current_plan=[])
         return plans, self.goal
 
+
+
     def _map_iteration(self, active_pm, iteration, current_plan, prev_state = []):
         logging.debug('STEP {0}:'.format(iteration))
         logging.debug('\tSituation {0}'.format(active_pm.longstr()))
@@ -67,6 +69,7 @@ class MapSearch():
 
         active_chains = active_pm.spread_down_activity('image', A_C)
         active_signifs = dict()
+        active_pm = active_pm.sign.images[1].copy('image', 'meaning')
 
         for chain in active_chains:
             pm = chain[-1]
@@ -99,7 +102,6 @@ class MapSearch():
             candidates = self._meta_check_activity(active_pm, applicable_meanings, [x for x, _, _, _ in current_plan])
         else:
             candidates = self._meta_check_htn(active_pm, applicable_meanings, [x for x, _, _, _ in current_plan])
-            #candidates = [(0, script.sign.name, script, agent) for agent, script in applicable_meanings]
 
         if not candidates:
             logging.debug('\tNot found applicable scripts ({0})'.format([x for _, x, _, _ in current_plan]))
@@ -114,7 +116,7 @@ class MapSearch():
             logging.debug('\tChoose {0}: {1} -> {2}'.format(counter, name, script))
             plan = copy(current_plan)
             subplan = None
-            next_pm = self._time_shift_forward(active_pm.sign.meanings[1], script, backward=self.backward)
+            next_pm = self._time_shift_forward(active_pm, script, backward=self.backward)
             if script.sign.images:
                 acts = []
                 for act in script.sign.images[1].spread_down_activity('image', 2):
@@ -123,12 +125,12 @@ class MapSearch():
                 self.exp_sits.add(next_pm)
                 subplan = self.hierarchical_exp_search(active_pm, next_pm, iteration, prev_state, acts)
             if not subplan:
-                plan.append((active_pm, name, script, ag_mask))
+                plan.append((active_pm.sign.images[1], name, script, ag_mask))
             else:
                 plan.extend(subplan)
                 logging.info(
                     'Сложное действие {0} уточнено. Найденные поддействия: {1}'.format(script.sign.name, [part[1] for part in subplan]))
-                prev_state.append(active_pm)
+                prev_state.append(active_pm.sign.images[1])
 
             _isbuild = False
             if self.check_pm:
@@ -177,7 +179,7 @@ class MapSearch():
                 expandable = True
             else:
                 expandable = False
-            result, checked = self._check_activity(cm, active_pm.sign.meanings[1], self.backward, expandable=expandable)
+            result, checked = self._check_activity(cm, active_pm, self.backward, expandable=expandable)
             if result:
                 maxlen = max([len(el) for el in checked.spread_down_activity('meaning', A_C)])
                 if maxlen >= 2:
@@ -231,18 +233,18 @@ class MapSearch():
 
         applicable = self.applicable_search([action for action in self.exp_acts[act] if
                                              (action[0] is not None and len(action[1].cause))],
-                                            active_pm.sign.meanings[1])
+                                            active_pm)
 
         if not applicable:
             logging.info('Не найдено допустимых действий')
             return None
 
         for action in applicable:
-            next_pm = self._time_shift_forward(active_pm.sign.meanings[1], action[1], self.backward)
+            next_pm = self._time_shift_forward(active_pm, action[1], self.backward)
             included_sit = [sit for sit in self.exp_sits if sit.includes('image', next_pm)]
             if included_sit:
                 plan.append(
-                    (active_pm, action[1].sign.name, action[1], action[0]))
+                    (active_pm.sign.images[1], action[1].sign.name, action[1], action[0]))
                 logging.info('Действие %s из опыта добавлено в план' % action[1].sign.name)
             else:
                 continue
@@ -476,7 +478,7 @@ class MapSearch():
     def _meta_check_activity(self, active_pm, scripts, prev_pms):
         heuristic = []
         for agent, script in scripts:
-            estimation = self._time_shift_forward(active_pm.sign.meanings[1], script, self.backward)
+            estimation = self._time_shift_forward(active_pm, script, self.backward)
             for prev in prev_pms:
                 if estimation.resonate('image', prev, False, False):
                     break
@@ -566,7 +568,7 @@ class MapSearch():
         heuristics = []
         # agent_preds = {con.in_sign.name for con in self.I_sign.out_images}
         for ag, script in applicable_meanings:
-            estimation = self._time_shift_forward(active_pm.sign.meanings[1], script, backward=self.backward)
+            estimation = self._time_shift_forward(active_pm, script, backward=self.backward)
             for prev in prev_pms:
                 if estimation.resonate('image', prev, False, False):
                     break
@@ -583,8 +585,11 @@ class MapSearch():
                                 heur_value+=1
                                 used.add(pred.sign.name)
                 heuristics.append((heur_value, script.sign.name, script, ag))
-        best_heuristics = max([el[0] for el in heuristics])
-        return list(filter(lambda x: x[0] == best_heuristics, heuristics))
+        if heuristics:
+            best_heuristics = max([el[0] for el in heuristics])
+            return list(filter(lambda x: x[0] == best_heuristics, heuristics))
+        else:
+            return None
 
 
 def mix_pairs(replace_map, repeat = False):

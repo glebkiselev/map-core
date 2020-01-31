@@ -13,7 +13,7 @@
 		:parameters ()
 		:subtasks (and
 		 (task0 (deliver block_a room_1))
-		 (task1 (deliver_ordering block_b room_2))
+		 (task1 (deliver block_b room_2))
 		)
 		:ordering (and
 			(task0 < task1)

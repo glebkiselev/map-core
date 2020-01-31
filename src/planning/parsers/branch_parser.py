@@ -231,7 +231,17 @@ def parse_htn(htn):
             if not ordering_list:
                 ordering_list.extend(lb)
             else:
-                ordering_list.append(lb[1])
+                if lb[0] in ordering_list and lb[1] not in ordering_list:
+                    ind = ordering_list.index(lb[0])
+                    ordering_list.insert(ind+1, lb[1])
+                elif not lb[0] in ordering_list and lb[1] in ordering_list:
+                    ind = ordering_list.index(lb[1])
+                    ordering_list.insert(ind, lb[0])
+                elif not lb[1] in ordering_list and not lb[0] in ordering_list:
+                    ordering_list.extend(lb)
+                else:
+                    if not ordering_list.index(lb[1]) > ordering_list.index(lb[0]):
+                        raise Exception('wrong tasks order!!! check problem htn!!!')
 
     return HtnStmt(parameters, subtasks, ordering_list)
 
