@@ -22,7 +22,7 @@ class MapSearch():
         self.scenario = None
         self.actions = []
         self.goal = None
-        self.MAX_ITERATION = 30
+        self.MAX_ITERATION = 20
         if TaskType == 'pddl':
             if self.backward:
                 self.check_pm = task.start_situation.images[1]
@@ -100,6 +100,7 @@ class MapSearch():
 
         if self.check_pm:
             candidates = self._meta_check_activity(active_pm, applicable_meanings, [x for x, _, _, _ in current_plan])
+            #candidates = [(0, apl[1].sign.name, apl[1], apl[0].name) for apl in applicable_meanings]
         else:
             candidates = self._meta_check_htn(active_pm, applicable_meanings, [x for x, _, _, _ in current_plan])
 
@@ -124,6 +125,8 @@ class MapSearch():
                         acts.append(act[1])
                 self.exp_sits.add(next_pm)
                 subplan = self.hierarchical_exp_search(active_pm, next_pm, iteration, prev_state, acts)
+                min_length = min([len(pl) for pl in subplan])
+                subplan = list(filter(lambda x: len(x) == min_length, subplan))[0]
             if not subplan:
                 plan.append((active_pm.sign.images[1], name, script, ag_mask))
             else:
@@ -221,15 +224,23 @@ class MapSearch():
         :param script: parametrs to generate plan
         :return:plan
         """
+        if iteration > len(acts):
+            return None
         if not cur_plan:
             logging.info('Clarify experience plan')
-        applicable = []
-        if self.backward:
-            act = acts[-(iteration+1)].sign
-        else:
-            act = acts[iteration].sign
+        try:
+            if self.backward:
+                act = acts[-(iteration+1)].sign
+            else:
+                act = acts[iteration].sign
+        except IndexError:
+            return None
         finall_plans = []
-        plan = copy(cur_plan)
+
+        try:
+            active_pm.spread_down_activity('meaning', 5)
+        except Exception:
+            active_pm = active_pm.sign.images[1].copy('image', 'meaning')
 
         applicable = self.applicable_search([action for action in self.exp_acts[act] if
                                              (action[0] is not None and len(action[1].cause))],
@@ -240,6 +251,7 @@ class MapSearch():
             return None
 
         for action in applicable:
+            plan = copy(cur_plan)
             next_pm = self._time_shift_forward(active_pm, action[1], self.backward)
             included_sit = [sit for sit in self.exp_sits if sit.includes('image', next_pm)]
             if included_sit:
@@ -250,15 +262,14 @@ class MapSearch():
                 continue
             if next_pm.includes('image', check_pm):
                     if plan:
-                        finall_plans.extend(plan)
+                        finall_plans.append(plan)
                     else:
-                        finall_plans.extend(plan)
+                        finall_plans.append(plan)
                         break
             else:
                 plan = self.hierarchical_exp_search(next_pm, check_pm, iteration+1, prev_state, acts, plan)
                 if plan:
                     finall_plans.extend(plan)
-                    break
         return finall_plans
 
     def _generate_meanings(self, chains, sm = None):
