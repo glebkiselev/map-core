@@ -47,7 +47,7 @@ class MapSearch():
             self.I_obj = I_objects[0]
         else:
             self.I_obj = None
-        self._precedent_activation()
+        self.precedent_activation()
         plans = self._map_iteration(self.active_pm, iteration=0, current_plan=[])
         return plans, self.goal
 
@@ -61,7 +61,7 @@ class MapSearch():
             logging.debug('\tMax iteration count')
             return None
 
-        precedents = self._precedent_search(active_pm)
+        precedents = self.precedent_search(active_pm)
 
         appl_actions = None
         if self.TaskType == 'hddl':
@@ -100,7 +100,6 @@ class MapSearch():
 
         if self.check_pm:
             candidates = self._meta_check_activity(active_pm, applicable_meanings, [x for x, _, _, _ in current_plan])
-            #candidates = [(0, apl[1].sign.name, apl[1], apl[0].name) for apl in applicable_meanings]
         else:
             candidates = self._meta_check_htn(active_pm, applicable_meanings, [x for x, _, _, _ in current_plan])
 
@@ -153,7 +152,7 @@ class MapSearch():
                     final_plans.extend(recursive_plans)
         return final_plans
 
-    def _precedent_search(self, active_pm):
+    def precedent_search(self, active_pm):
         precedents = []
         active_cm = active_pm.copy('image', 'meaning')
         for cm in self.precedents:
@@ -162,7 +161,7 @@ class MapSearch():
                 precedents.append((self.I_sign, checked))
         return precedents
 
-    def _precedent_activation(self):
+    def precedent_activation(self):
         if not self.exp_sits:
             self.exp_sits = self.world_model['situation'].spread_down_activity_obj('image', 1)
         if not self.exp_acts:
@@ -332,86 +331,6 @@ class MapSearch():
         new_map = {}
         rkeys = {el for el in replace_map.keys()}
         pms = []
-
-        # if not sm:
-        #     # Remove expanded actions. Add fully signed actions to pms list
-        #     for agent, lpm in mapped_actions.items():
-        #         for pm in lpm.copy():
-        #             if len(pm.cause) + len(pm.effect) != main_pm_len:
-        #                 lpm.remove(pm)
-        #                 continue
-        #             pm_signs = set()
-        #             pm_mean = pm.spread_down_activity('meaning', A_C)
-        #             for pm_list in pm_mean:
-        #                 pm_signs |= set([c.sign for c in pm_list])
-        #             role_signs = rkeys & pm_signs
-        #             if not role_signs:
-        #                 lpm.remove(pm)
-        #                 if not pms:
-        #                     pms.append((agent, pm))
-        #                 else:
-        #                     for _, pmd in copy(pms):
-        #                         if pmd.resonate('meaning', pm):
-        #                             break
-        #                     else:
-        #                         pms.append((agent, pm))
-        #         old_pms = []
-        #         # Generate new meanings to not fully signed actions
-        #         for pm in lpm:
-        #             if len(pm.cause) + len(pm.effect) != main_pm_len:
-        #                 continue
-        #             pm_signs = set()
-        #             pm_mean = pm.spread_down_activity('meaning', A_C)
-        #             for pm_list in pm_mean:
-        #                 pm_signs |= set([c.sign for c in pm_list])
-        #             if pm_signs not in old_pms:
-        #                 old_pms.append(pm_signs)
-        #             else:
-        #                 continue
-        #             role_signs = rkeys & pm_signs
-        #             for role_sign in role_signs:
-        #                 new_map[role_sign] = replace_map[role_sign]
-        #
-        #             combinations = mix_pairs(new_map)
-        #             pms = __generator(combinations, pms, pm_signs, pm)
-        #             if len(old_pms) == 64:
-        #                 break
-        # else:
-        #     I_sign = self.world_model['I']
-        #     I_obj = I_sign.out_significances[0].in_sign
-        #     agent_roles = I_obj.get_role()
-        #     I_mean = I_sign.add_meaning()
-        #     connector = sm.add_feature(I_mean)
-        #     efconnector = sm.add_feature(I_mean, effect=True)
-        #     I_sign.add_out_meaning(connector)
-        #     roles = set()
-        #
-        #     for chain in sm.spread_down_activity('meaning', A_C):
-        #         if chain[-1].sign in agent_roles:
-        #             roles.add(chain[-2].sign)
-        #     for elem in roles:
-        #         sm.replace('meaning', elem, I_mean)
-        #     changed_roles = set()
-        #     pm_chains = sm.spread_down_activity('meaning', A_C)
-        #     for chain in pm_chains:
-        #         for achain in chains:
-        #             if chain[-1].sign == achain[-1].sign and len(chain) > 2:
-        #                 changed_roles.add((achain[-3].sign, chain[-1]))
-        #
-        #     new_map = {}
-        #     for elem in changed_roles:
-        #         if elem[1].sign != I_sign:
-        #             new_map[elem[0]] = {el for el in replace_map[elem[0]] if el != elem[1]}
-        #     for key, value in replace_map.items():
-        #         if key not in new_map:
-        #             new_map[key] = value
-        #
-        #     pm_signs = set()
-        #     for pm_list in pm_chains:
-        #         pm_signs |= set([c.sign for c in pm_list])
-        #
-        #     combinations = mix_pairs(new_map, True)
-        #     pms = __generator(combinations, pms, pm_signs, sm)
 
         # Remove expanded actions. Add fully signed actions to pms list
         for agent, lpm in mapped_actions.items():
